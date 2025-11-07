@@ -11,7 +11,9 @@
     "ios": {
       "supportsTablet": true
     },
+
     "android": {
+      "package": "leaderapp.for.otp",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -38,7 +40,10 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth"
     ],
     "experiments": {
       "typedRoutes": true,
