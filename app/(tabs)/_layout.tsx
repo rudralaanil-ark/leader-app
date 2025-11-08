@@ -16,8 +16,9 @@ export default function TabsLayout() {
         tabBarActiveTintColor: Colors.primary,
         // headerShown: false,
         tabBarStyle: {
-          // backgroundColor: Colors.background,
-          borderTopColor: Colors.border,
+          backgroundColor: Colors.tab_bar,
+          borderTopColor: Colors.tab_bar_border,
+          borderTopWidth: 2,
           paddingBottom: 10,
           height: 120,
           paddingTop: 10,
@@ -26,7 +27,7 @@ export default function TabsLayout() {
           fontSize: 12,
           fontWeight: "600",
           paddingBottom: 2,
-          color: Colors.text, // label text color
+          color: Colors.tab_text, // label text color
         },
         tabBarItemStyle: {
           marginHorizontal: 6, // spacing between tabs
@@ -40,6 +41,9 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
           ),
+          headerStyle: {
+            backgroundColor: Colors.background,
+          },
         }}
       />
       <Tabs.Screen
