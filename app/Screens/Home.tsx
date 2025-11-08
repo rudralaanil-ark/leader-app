@@ -1,18 +1,18 @@
+import { auth } from "@/configs/FirebaseConfig";
+import Colors from "@/data/Colors";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
+import { signOut } from "firebase/auth";
 import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
   Image,
   StyleSheet,
-  TouchableOpacity,
+  Text,
   ToastAndroid,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import Ionicons from "@expo/vector-icons/Ionicons";
-import { useRouter } from "expo-router";
-import Colors from "@/data/Colors";
-import { signOut } from "firebase/auth";
-import { auth } from "@/configs/FirebaseConfig";
 
 export default function Home() {
   const [user, setUser] = useState<any>(null);
@@ -39,7 +39,7 @@ export default function Home() {
     };
 
     loadUserData();
-  }, []);
+  });
 
   // ✅ Handle sign-out
   const handleLogout = async () => {
