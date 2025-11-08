@@ -1,7 +1,7 @@
 import { db } from "@/configs/FirebaseConfig";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { UserType } from "@/contexts/AuthContext";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { ToastAndroid } from "react-native";
-
 /**
  * Create a new user document in Firestore
  */
@@ -24,16 +24,25 @@ export default createUserInFirestore;
 /**
  * Fetch user data from Firestore using user UID
  */
-export const fetchUserData = async (uid: string) => {
+export const fetchUserData = async (uid: string): Promise<UserType | null> => {
   try {
     const docRef = doc(db, "users", uid);
     const userDoc = await getDoc(docRef);
 
     if (userDoc.exists()) {
+      const data = userDoc.data();
+      const userData: UserType = {
+        uid,
+        fullName: data.fullName,
+        email: data.email,
+        profileImage: data.profileImage || undefined,
+      };
+
       console.log("✅ User data:", userDoc.data());
-      return userDoc.data();
+
+      return userData;
     } else {
-      ToastAndroid.show("User not found in database", ToastAndroid.BOTTOM);
+      // ToastAndroid.show("User not found in database", ToastAndroid.BOTTOM);
       return null;
     }
   } catch (error) {

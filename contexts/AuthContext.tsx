@@ -14,7 +14,12 @@ import {
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { ToastAndroid } from "react-native";
 
-type UserType = any;
+export type UserType = {
+  uid: string;
+  fullName: string;
+  email: string;
+  profileImage?: string; // optional (may not exist for new users)
+};
 
 type AuthContextType = {
   user: UserType | null;
@@ -30,14 +35,16 @@ type AuthContextType = {
   refreshUser: () => Promise<void>;
 };
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  loading: true,
-  signUp: async () => {},
-  signIn: async () => {},
-  logout: async () => {},
-  refreshUser: async () => {},
-});
+// const AuthContext = createContext<AuthContextType>({
+//   user: null,
+//   loading: true,
+//   signUp: async () => {},
+//   signIn: async () => {},
+//   logout: async () => {},
+//   refreshUser: async () => {},
+// });
+
+const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<UserType | null>(null);
@@ -68,11 +75,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (userData) {
           setUser(userData);
           await AsyncStorage.setItem("userData", JSON.stringify(userData));
-          // router.push("/Screens/Home");
+          router.push("/(tabs)/Home");
         }
       } else {
         setUser(null);
         await AsyncStorage.removeItem("userData");
+        router.replace("/landing");
       }
       setLoading(false);
     });
@@ -113,7 +121,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           ToastAndroid.BOTTOM
         );
       }
-      router.push("/Screens/Home");
+      router.push("/(tabs)/Home");
     } catch (error: any) {
       // console.error("Signup error:", error);
       const errorMsg = authErrorMessage(error?.message && email);
@@ -147,7 +155,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           `Welcome back!  ${userData.fullName || "User"} 👋`,
           ToastAndroid.BOTTOM
         );
-        router.push("/Screens/Home");
+        router.push("/(tabs)/Home");
       }
     } catch (error: any) {
       console.error("Signin error:", error);
@@ -195,4 +203,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+// export const useAuth = () => useContext(AuthContext);
+
+export const useAuth = (): AuthContextType => useContext(AuthContext);
+
+// export const useAuth = () => {
+//   const context = useContext(AuthContext);
+//   if (!context) {
+//     throw new Error("useAuth must be used inside an AuthProvider");
+//   }
+//   return context;
+// };

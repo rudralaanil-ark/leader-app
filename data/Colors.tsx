@@ -1,9 +1,10 @@
 export default {
   primary: "#3498db",
-  secondary: "#17b124ff",
+  secondary: "#ecececff",
   background: "#c4b1e2ff",
-  text: "#1d1d1dff",
+  text: "#f0f0f0ff",
   border: "#dddddd",
   icons: "#555555",
   Gray: "gray",
+  cards: "#db1515ff",
 };
