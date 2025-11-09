@@ -9,6 +9,6 @@ export default {
   cards: "#db1515ff",
   tab_text: "#1d1d1dff",
   tabs_color: "#ffffff",
-  tab_bar: "#dbdbdbff",
+  tab_bar: "#ffffffff",
   tab_bar_border: "#000000ff",
 };

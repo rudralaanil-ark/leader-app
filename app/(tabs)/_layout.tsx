@@ -37,12 +37,14 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="Home"
         options={{
-          headerTitle: "Home",
+          headerTitle: "",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
           ),
+          //headersStyle is used to edit the top header bar
           headerStyle: {
             backgroundColor: Colors.background,
+            height: 30,
           },
         }}
       />
@@ -53,6 +55,7 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="newspaper" size={size} color={color} />
           ),
+          headerStyle: {},
         }}
       />
       <Tabs.Screen
@@ -74,9 +77,9 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="Profile"
+        name="User"
         options={{
-          headerTitle: "Profile",
+          headerTitle: "User",
           tabBarIcon: ({ color, size, focused }) => (
             <View
               style={{
