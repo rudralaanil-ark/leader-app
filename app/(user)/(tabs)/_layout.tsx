@@ -1,11 +1,11 @@
+import ProfileTabIcon from "@/componenets/Shared/ProfileTabIcon";
 import { useAuth } from "@/contexts/AuthContext";
 import Colors from "@/data/Colors";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { Tabs } from "expo-router";
 import React from "react";
-import { Image, View } from "react-native";
-
+// import ProfileTabIcon from "@/components/Shared/ProfileTabIcon";
 export default function TabsLayout() {
   const user = useAuth().user;
   console.log(user?.profileImage);
@@ -76,7 +76,7 @@ export default function TabsLayout() {
           ),
         }}
       />
-      <Tabs.Screen
+      {/* <Tabs.Screen
         name="User"
         options={{
           headerTitle: "User",
@@ -104,7 +104,29 @@ export default function TabsLayout() {
             </View>
           ),
         }}
+      /> */}
+
+      <Tabs.Screen
+        name="User"
+        options={{
+          title: "User",
+          tabBarIcon: ({ color, size, focused }) => (
+            <ProfileTabIcon
+              color={color}
+              size={size}
+              focused={focused}
+              imageUrl={user?.profileImage}
+            />
+          ),
+        }}
       />
+      <Tabs.Screen name="Gallery" options={{ href: null }} />
+      <Tabs.Screen name="Video" options={{ href: null }} />
+      <Tabs.Screen name="Profile" options={{ href: null }} />
+      <Tabs.Screen name="ComplaintBox" options={{ href: null }} />
+      <Tabs.Screen name="Survey" options={{ href: null }} />
+      <Tabs.Screen name="Help" options={{ href: null }} />
+      <Tabs.Screen name="NewsDetails" options={{ href: null }} />
     </Tabs>
   );
 }

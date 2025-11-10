@@ -1,5 +1,4 @@
 // ✅ /contexts/AuthContext.tsx
-import authErrorMessage from "@/app/(auth)/utils/authErrors";
 import { uploadImageToCloudinary } from "@/app/api/uploadImage";
 import { createUserInFirestore, fetchUserData } from "@/app/api/users";
 import { auth } from "@/configs/FirebaseConfig";
@@ -14,11 +13,17 @@ import {
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { ToastAndroid } from "react-native";
 
+/**
+ * 🟢 Updated UserType to include role and createdBy
+ */
 export type UserType = {
   uid: string;
   fullName: string;
   email: string;
-  profileImage?: string; // optional (may not exist for new users)
+  profileImage?: string;
+  role?: "user" | "monitor" | "admin"; // 🟢 Added
+  createdAt?: Timestamp | Date | null;
+  createdBy?: string | null; // 🟢 Added
 };
 
 type AuthContextType = {
@@ -35,15 +40,6 @@ type AuthContextType = {
   refreshUser: () => Promise<void>;
 };
 
-// const AuthContext = createContext<AuthContextType>({
-//   user: null,
-//   loading: true,
-//   signUp: async () => {},
-//   signIn: async () => {},
-//   logout: async () => {},
-//   refreshUser: async () => {},
-// });
-
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -51,7 +47,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // Load user from AsyncStorage (for persistence)
   const loadUserFromStorage = async () => {
     try {
       const stored = await AsyncStorage.getItem("userData");
@@ -63,24 +58,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Firebase listener for login/logout state
-  // when the app loads, this checks if user is logged in or not.
-  // if the user is logged in, fetch user data from firestore
-  // and set it to context and async storage. and it redirects to home screen with user data.
+  // 🟢 Updated Auth listener to redirect by role
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        console.log(user);
         const userData = await fetchUserData(firebaseUser.uid);
         if (userData) {
           setUser(userData);
           await AsyncStorage.setItem("userData", JSON.stringify(userData));
-          router.push("/(tabs)/Home");
+
+          // 🟢 Role-based navigation
+          if (router && router.canGoBack() === false) {
+            if (userData.role === "admin")
+              router.replace("/(admin)/(tabs)/Dashboard");
+            else if (userData.role === "monitor")
+              router.replace("/(monitor)/(tabs)/Dashboard" as any);
+            else router.replace("/(user)/(tabs)/Home" as any);
+          }
         }
       } else {
         setUser(null);
         await AsyncStorage.removeItem("userData");
-        router.replace("/landing");
+        router.replace("/(auth)/SignIn");
       }
       setLoading(false);
     });
@@ -89,7 +88,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return unsubscribe;
   }, []);
 
-  // ✅ Sign Up (create user + Firestore + Cloudinary + AsyncStorage)
+  // 🟢 Updated signUp to create normal users by default
+
   const signUp = async (
     fullName: string,
     email: string,
@@ -110,7 +110,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         imageUrl = await uploadImageToCloudinary(profileImage);
       }
 
-      await createUserInFirestore(firebaseUser.uid, fullName, email, imageUrl);
+      // 🟢 Create Firestore doc with role 'user'
+      await createUserInFirestore(
+        firebaseUser.uid,
+        fullName,
+        email,
+        imageUrl,
+        "user"
+      );
 
       const userData = await fetchUserData(firebaseUser.uid);
       if (userData) {
@@ -120,11 +127,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           `Welcome, ${userData.fullName}! Account created successfully.`,
           ToastAndroid.BOTTOM
         );
+
+        // 🟢 Navigate based on role
+        router.replace("/(user)/(tabs)/Home" as any);
       }
-      router.push("/(tabs)/Home");
     } catch (error: any) {
-      // console.error("Signup error:", error);
-      const errorMsg = authErrorMessage(error?.message && email);
+      // const errorMsg = authErrorMessage(error?.message && email);
       ToastAndroid.show(
         error.code === "auth/email-already-in-use"
           ? "This email is already registered. Please sign in."
@@ -136,7 +144,71 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // ✅ Sign In (Firebase + AsyncStorage)
+  // 🟢 Updated signIn to route by role
+
+  // const signUp = async (
+  //   fullName: string,
+  //   email: string,
+  //   password: string,
+  //   profileImage?: string
+  // ) => {
+  //   try {
+  //     setLoading(true);
+
+  //     // 1️⃣ Create Firebase user
+  //     const userCredential = await createUserWithEmailAndPassword(
+  //       auth,
+  //       email,
+  //       password
+  //     );
+  //     const firebaseUser = userCredential.user;
+
+  //     // 2️⃣ Upload profile image to Cloudinary
+  //     let imageUrl: string | null = null;
+  //     if (profileImage) {
+  //       imageUrl = await uploadImageToCloudinary(profileImage);
+  //     }
+
+  //     // 3️⃣ Create Firestore user document
+  //     await createUserInFirestore(
+  //       firebaseUser.uid,
+  //       fullName,
+  //       email,
+  //       imageUrl,
+  //       "user"
+  //     );
+
+  //     // 4️⃣ Fetch full user data from Firestore
+  //     const userData = await fetchUserData(firebaseUser.uid);
+
+  //     if (userData) {
+  //       // 5️⃣ Save in AsyncStorage
+  //       await AsyncStorage.setItem("userData", JSON.stringify(userData));
+  //       setUser(userData);
+
+  //       ToastAndroid.show(
+  //         `Welcome, ${userData.fullName}!`,
+  //         ToastAndroid.BOTTOM
+  //       );
+  //     }
+
+  //     // ✅ 6️⃣ Wait for auth state sync (important!)
+  //     setTimeout(() => {
+  //       router.replace("/(user)/(tabs)/Home" as any);
+  //     }, 1000); // Wait 1 second to allow onAuthStateChanged to sync
+  //   } catch (error: any) {
+  //     const errorMsg = authErrorMessage(error?.message && email);
+  //     ToastAndroid.show(
+  //       error.code === "auth/email-already-in-use"
+  //         ? "This email is already registered. Please sign in."
+  //         : errorMsg,
+  //       ToastAndroid.BOTTOM
+  //     );
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const signIn = async (email: string, password: string) => {
     try {
       setLoading(true);
@@ -147,18 +219,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       );
       const firebaseUser = userCredential.user;
 
+      //This give the Firebase Id Token for the logged in user
+      const token = await firebaseUser.getIdToken();
+      console.log("ADMIN TOKEN:", token);
+
       const userData = await fetchUserData(firebaseUser.uid);
       if (userData) {
         await AsyncStorage.setItem("userData", JSON.stringify(userData));
         setUser(userData);
         ToastAndroid.show(
-          `Welcome back!  ${userData.fullName || "User"} 👋`,
+          `Welcome back, ${userData.fullName}! 👋`,
           ToastAndroid.BOTTOM
         );
-        router.push("/(tabs)/Home");
+
+        if (userData.role === "admin")
+          router.replace("/(admin)/(tabs)/Dashboard");
+        else if (userData.role === "monitor")
+          router.replace("/(monitor)/(tabs)/Dashboard" as any);
+        else router.replace("/(user)/(tabs)/Home" as any);
       }
     } catch (error: any) {
-      console.error("Signin error:", error);
+      // console.error("Signin error:", error);
       ToastAndroid.show(
         error.code === "auth/invalid-credential"
           ? "Incorrect email or password."
@@ -170,7 +251,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // ✅ Logout
   const logout = async () => {
     try {
       await signOut(auth);
@@ -183,7 +263,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // ✅ Refresh user manually (after profile update)
   const refreshUser = async () => {
     if (user?.uid) {
       const updatedData = await fetchUserData(user.uid);
@@ -203,14 +282,4 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-// export const useAuth = () => useContext(AuthContext);
-
 export const useAuth = (): AuthContextType => useContext(AuthContext);
-
-// export const useAuth = () => {
-//   const context = useContext(AuthContext);
-//   if (!context) {
-//     throw new Error("useAuth must be used inside an AuthProvider");
-//   }
-//   return context;
-// };

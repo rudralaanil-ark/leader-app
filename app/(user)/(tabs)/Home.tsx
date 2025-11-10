@@ -13,11 +13,11 @@ export default function Home() {
     {
       icon: "person-circle-outline",
       label: "Profile",
-      route: "/Screens/Profile",
+      route: "/(tabs)/Profile",
     },
     { icon: "newspaper-outline", label: "News", route: "/(tabs)/News" },
-    { icon: "images-outline", label: "Gallery", route: "/Screens/Gallery" },
-    { icon: "videocam-outline", label: "Video", route: "/Screens/Video" },
+    { icon: "images-outline", label: "Gallery", route: "/(tabs)/Gallery" },
+    { icon: "videocam-outline", label: "Video", route: "/(tabs)/Video" },
     { icon: "calendar-outline", label: "Events", route: "/(tabs)/Events" },
     {
       icon: "chatbubbles-outline",
@@ -27,10 +27,10 @@ export default function Home() {
     {
       icon: "alert-circle-outline",
       label: "Complaint Box",
-      route: "/Screens/ComplaintBox",
+      route: "/(tabs)/ComplaintBox",
     },
-    { icon: "clipboard-outline", label: "Survey", route: "/Screens/Survey" },
-    { icon: "help-circle-outline", label: "Help", route: "/Screens/Help" },
+    { icon: "clipboard-outline", label: "Survey", route: "/(tabs)/Survey" },
+    { icon: "help-circle-outline", label: "Help", route: "/(tabs)/Help" },
   ];
 
   return (
