@@ -1,16 +1,12 @@
-import { uploadImageToCloudinary } from "@/app/api/uploadImage"; // ✅ imported
-import { createUserInFirestore, fetchUserData } from "@/app/api/users"; // ✅ imported
 import Button from "@/componenets/Shared/Button";
 import TextInputField from "@/componenets/Shared/TextInputField";
-import { auth } from "@/configs/FirebaseConfig";
 import Colors from "@/data/Colors";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import { createUserWithEmailAndPassword } from "firebase/auth";
 import React, { useState } from "react";
 // import { SignIn } from "@/(auth)/SignIn";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Image,
   StyleSheet,
@@ -19,15 +15,16 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import authErrorMessage from "./utils/authErrors";
 
 export default function SignUp() {
+  const { signUp, loading } = useAuth();
+
   const router = useRouter();
   const [profileImage, setProfileImage] = useState<string | undefined>();
   const [fullName, setFullName] = useState<string | undefined>();
   const [email, setEmail] = useState<string | undefined>();
   const [password, setPassword] = useState<string | undefined>();
-  const [loading, setLoading] = useState(false);
+  // const [loading, setLoading] = useState(false);
 
   const onButtonPress = async () => {
     if (!email || !password || !fullName) {
@@ -35,43 +32,55 @@ export default function SignUp() {
       return;
     }
 
-    try {
-      setLoading(true);
+    //   try {
+    //     setLoading(true);
 
-      // ✅ Create Firebase user first
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      const user = userCredential.user;
-      console.log("User created:", user.uid);
+    //     // ✅ Create Firebase user first
+    //     const userCredential = await createUserWithEmailAndPassword(
+    //       auth,
+    //       email,
+    //       password
+    //     );
+    //     const user = userCredential.user;
+    //     console.log("User created:", user.uid);
 
-      // ✅ Upload image AFTER user is created
-      let uploadedUrl: string | null = null;
-      if (profileImage) {
-        uploadedUrl = await uploadImageToCloudinary(profileImage);
-      }
+    //     // ✅ Upload image AFTER user is created
+    //     let uploadedUrl: string | null = null;
+    //     if (profileImage) {
+    //       uploadedUrl = await uploadImageToCloudinary(profileImage);
+    //     }
 
-      // ✅ Save data to Firestore
-      await createUserInFirestore(user.uid, fullName, email, uploadedUrl);
+    //     // ✅ Save data to Firestore
+    //     await createUserInFirestore(user.uid, fullName, email, uploadedUrl);
 
-      const userData = await fetchUserData(user.uid);
-      if (userData) {
-        await AsyncStorage.setItem("userData", JSON.stringify(userData));
-        ToastAndroid.show(
-          "Account created successfully! Welcome, " + userData.fullName,
-          ToastAndroid.BOTTOM
-        );
-      }
-      router.push("/Screens/Home");
-    } catch (error: any) {
-      // console.error("Signup error:", error);
-      const errorMsg = authErrorMessage(error?.message);
-      ToastAndroid.show(errorMsg, ToastAndroid.BOTTOM);
-    } finally {
-      setLoading(false);
-    }
+    //     const userData = await fetchUserData(user.uid);
+    //     if (userData) {
+    //       await AsyncStorage.setItem("userData", JSON.stringify(userData));
+    //       ToastAndroid.show(
+    //         "Account created successfully! Welcome, " + userData.fullName,
+    //         ToastAndroid.BOTTOM
+    //       );
+    //     }
+    //     router.push("/Screens/Home");
+    //   } catch (error: any) {
+    //     // console.error("Signup error:", error);
+    //     const errorMsg = authErrorMessage(error?.message && email);
+
+    //     if (error?.code === "auth/email-already-in-use" && email) {
+    //       ToastAndroid.show(
+    //         `${email} is already registered. Please sign in.`,
+    //         ToastAndroid.BOTTOM
+    //       );
+    //     } else {
+    //       ToastAndroid.show(errorMsg, ToastAndroid.BOTTOM);
+    //     }
+    //   } finally {
+    //     setLoading(false);
+    //   }
+    // };
+
+    // signUp function from context (AuthContext) handles the below logic.
+    signUp(fullName, email, password, profileImage);
   };
 
   const pickImage = async () => {

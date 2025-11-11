@@ -1,52 +1,53 @@
 import Button from "@/componenets/Shared/Button";
 import TextInputField from "@/componenets/Shared/TextInputField";
-import { auth } from "@/configs/FirebaseConfig";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "expo-router";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import React, { useState } from "react";
+import React from "react";
 import { Image, Text, ToastAndroid, View } from "react-native";
-import { fetchUserData } from "../api/users";
 
 export default function SingIn() {
   const router = useRouter();
   const [email, setEmail] = React.useState<string | undefined>();
   const [password, setPassword] = React.useState<string | undefined>();
-  const [loading, setLoading] = useState(false);
+  // const [loading, setLoading] = useState(false);
+  const { signIn, loading } = useAuth();
   const onSignInButtonPress = async () => {
     if (!email || !password) {
       ToastAndroid.show("Please enter email and password", ToastAndroid.BOTTOM);
       return;
     }
-    try {
-      setLoading(true);
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      const user = userCredential.user;
-      console.log("User signed in:", user.uid);
+    //   try {
+    //     setLoading(true);
+    //     const userCredential = await signInWithEmailAndPassword(
+    //       auth,
+    //       email,
+    //       password
+    //     );
+    //     const user = userCredential.user;
+    //     console.log("User signed in:", user.uid);
 
-      const userData = await fetchUserData(user.uid);
+    //     const userData = await fetchUserData(user.uid);
 
-      if (userData) {
-        await AsyncStorage.setItem("userData", JSON.stringify(userData));
-        ToastAndroid.show(
-          "Welcome back, " + userData.fullName,
-          ToastAndroid.BOTTOM
-        );
-      }
+    //     if (userData) {
+    //       await AsyncStorage.setItem("userData", JSON.stringify(userData));
+    //       ToastAndroid.show(
+    //         "Welcome back, " + userData.fullName,
+    //         ToastAndroid.BOTTOM
+    //       );
+    //     }
 
-      router.replace("/Screens/Home");
-    } catch (error: any) {
-      console.log("Error signing in:", error.message);
-      ToastAndroid.show(
-        "Sign in failed. Please check your credentials.",
-        ToastAndroid.BOTTOM
-      );
-      setLoading(false);
-    }
+    //     router.replace("/Screens/Home");
+    //   } catch (error: any) {
+    //     console.log("Error signing in:", error.message);
+    //     ToastAndroid.show(
+    //       "Sign in failed. Please check your credentials.",
+    //       ToastAndroid.BOTTOM
+    //     );
+    //     setLoading(false);
+    //   }
+
+    // singIn function from context (AuthContext) handles the below logic.
+    signIn(email, password);
   };
 
   return (

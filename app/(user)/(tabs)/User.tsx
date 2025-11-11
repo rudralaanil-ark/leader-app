@@ -14,7 +14,7 @@ import {
   View,
 } from "react-native";
 
-export default function Home() {
+export default function UserProfile() {
   const [user, setUser] = useState<any>(null);
   const router = useRouter();
 
@@ -78,7 +78,7 @@ export default function Home() {
           source={
             user.profileImage
               ? { uri: user.profileImage }
-              : require("../../assets/images/profile.png")
+              : require("../../../assets/images/profile.png")
           }
           style={styles.profileImage}
         />

@@ -1,7 +1,10 @@
-import { Redirect } from "expo-router";
-import { View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 
 export default function Index() {
+  // onAuthStateChanged(auth, (user) => {
+  //   console.log(user);
+  // });
+
   return (
     <View
       style={{
@@ -10,7 +13,10 @@ export default function Index() {
         alignItems: "center",
       }}
     >
-      <Redirect href="/landing" />
+      {/* <Redirect href="/landing" /> */}
+
+      {/* the ActivityIndicator is used to give the loading animation but it is not working , check it later */}
+      <ActivityIndicator />
     </View>
   );
 }
