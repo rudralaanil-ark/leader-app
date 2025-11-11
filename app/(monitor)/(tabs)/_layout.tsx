@@ -42,19 +42,6 @@ export default function MonitorTabs() {
         }}
       />
 
-      <Tabs.Screen
-        name="EventsList"
-        options={{
-          title: "Events",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons
-              name="calendar-number-outline"
-              color={color}
-              size={size}
-            />
-          ),
-        }}
-      />
 
       <Tabs.Screen
         name="EventList"

@@ -100,7 +100,7 @@ export default function Events() {
 
       const result = await markInterested(eventId, {
         id: currentUser.uid,
-        name: userData.name || currentUser.displayName || "User",
+        name: userData.fullName || currentUser.displayName || "User",
         email: currentUser.email,
         phone: userData.phone || "",
       });
@@ -227,8 +227,8 @@ export default function Events() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#f9f9f9", paddingTop: 12 }}>
-      <Text style={styles.heading}>Upcoming Events</Text>
+    <View style={{ flex: 1, backgroundColor: "#f9f9f9", paddingTop: 10 }}>
+      {/* <Text style={styles.heading}>Upcoming Events</Text> */}
 
       <FlatList
         data={events}
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   card: {
-    marginBottom: 20,
+    marginBottom: 10,
     borderRadius: 16,
     overflow: "hidden",
     elevation: 4,

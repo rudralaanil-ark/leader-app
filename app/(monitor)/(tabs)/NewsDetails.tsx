@@ -1,218 +1,226 @@
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useRef } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
 import {
-  Animated,
+  ActivityIndicator,
   BackHandler,
+  Dimensions,
+  Image,
   ScrollView,
-  Share,
+  StatusBar,
+  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { getNews } from "./api/news";
+
+const { width } = Dimensions.get("window");
 
 export default function NewsDetails() {
+  const { id } = useLocalSearchParams<{ id?: string }>();
   const router = useRouter();
-  const { title, description, imageUrl, createdAt } = useLocalSearchParams();
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [news, setNews] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  // ✅ Universal Date-Time Formatter
-  const formatDateTime = (value: any) => {
-    if (!value) return "";
-
+  // 🧠 Fetch single news
+  const loadNews = async (newsId: string) => {
     try {
-      let dateObj;
-
-      // Case 1: Firestore timestamp object { seconds, nanoseconds }
-      if (typeof value === "object" && (value._seconds || value.seconds)) {
-        dateObj = new Date((value._seconds || value.seconds) * 1000);
-      }
-      // Case 2: Milliseconds number (like 1731205190000)
-      else if (typeof value === "number") {
-        dateObj = new Date(value);
-      }
-      // Case 3: Stringified timestamp number (like "1731205190000")
-      else if (typeof value === "string" && /^\d+$/.test(value)) {
-        dateObj = new Date(parseInt(value));
-      }
-      // Case 4: ISO string (like "2025-11-10T08:32:00Z")
-      else if (typeof value === "string") {
-        dateObj = new Date(value);
-      }
-
-      if (!dateObj || isNaN(dateObj.getTime())) return "";
-
-      // ✅ Format: 10 Nov 2025, 08:32 PM
-      return dateObj.toLocaleString(undefined, {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      });
+      const data = await getNews(newsId);
+      if (data) setNews(data);
     } catch (err) {
-      console.error("Date parse error:", err);
-      return "";
+      console.error("Error loading news:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // ✨ Fade-in animation
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 600,
-      useNativeDriver: true,
-    }).start();
-  }, []);
+    if (id) loadNews(id);
+  }, [id]);
 
-  // 🔙 Handle hardware back button
-  useEffect(() => {
-    const backHandler = BackHandler.addEventListener(
-      "hardwareBackPress",
-      () => {
+  // 🧭 Reload when revisiting
+  useFocusEffect(
+    useCallback(() => {
+      if (id) loadNews(id);
+    }, [id])
+  );
+
+  // 🔙 Handle hardware back
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
         router.push("/(monitor)/(tabs)/NewsList");
         return true;
-      }
-    );
-    return () => backHandler.remove();
-  }, []);
+      };
+      const subscription = BackHandler.addEventListener(
+        "hardwareBackPress",
+        onBackPress
+      );
+      return () => subscription.remove();
+    }, [router])
+  );
 
-  // 📤 Share news
-  const handleShare = async () => {
+  // 🗓️ Smart universal date formatter
+  const formatDate = (createdAt: any) => {
+    if (!createdAt) return "Unknown date";
     try {
-      await Share.share({
-        title: title as string,
-        message: `${title}\n\n${description}\n\nShared via Leader App 🗞️`,
-      });
-    } catch (error) {
-      console.log("Error sharing:", error);
+      if (typeof createdAt === "object") {
+        if (createdAt._seconds) return new Date(createdAt._seconds * 1000);
+        if (createdAt.seconds) return new Date(createdAt.seconds * 1000);
+        if (createdAt.toDate) return createdAt.toDate();
+      }
+      const date = new Date(createdAt);
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        });
+      }
+      return "Unknown date";
+    } catch {
+      return "Unknown date";
     }
   };
 
+  if (loading)
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={{ marginTop: 10, color: "#555" }}>Loading article...</Text>
+      </View>
+    );
+
+  if (!news)
+    return (
+      <View style={styles.center}>
+        <Text style={{ color: "#666" }}>News not found.</Text>
+      </View>
+    );
+
   return (
-    <View style={{ flex: 1, backgroundColor: "#fff" }}>
-      {/* 🌈 Gradient Header */}
-      <LinearGradient
-        colors={["#007bff", "#0056d2"]}
-        style={{
-          paddingTop: 50,
-          paddingBottom: 20,
-          paddingHorizontal: 16,
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+
+      {/* 🔙 Back Button */}
+      <TouchableOpacity
+        style={styles.backBtn}
+        onPress={() => router.back()}
+        activeOpacity={0.7}
       >
-        {/* Back Button */}
-        <TouchableOpacity
-          onPress={() => router.push("/(monitor)/(tabs)/NewsList")}
-          style={{ flexDirection: "row", alignItems: "center" }}
-        >
-          <Ionicons name="arrow-back" size={26} color="#fff" />
-          <Text
-            style={{
-              color: "#fff",
-              fontSize: 18,
-              fontWeight: "600",
-              marginLeft: 8,
-            }}
-          >
-            Back
-          </Text>
-        </TouchableOpacity>
+        <Ionicons name="arrow-back" size={24} color="#111" />
+      </TouchableOpacity>
 
-        {/* Share Button */}
-        <TouchableOpacity onPress={handleShare}>
-          <Ionicons name="share-social-outline" size={24} color="#fff" />
-        </TouchableOpacity>
-      </LinearGradient>
-
-      {/* 📰 Scrollable Content */}
       <ScrollView
-        contentContainerStyle={{
-          padding: 16,
-          paddingBottom: 40,
-        }}
+        contentContainerStyle={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* 🖼️ Image */}
-        {imageUrl ? (
-          <Animated.Image
-            source={{ uri: imageUrl as string }}
-            style={{
-              width: "100%",
-              height: 250,
-              borderRadius: 12,
-              marginBottom: 16,
-              opacity: fadeAnim,
-            }}
-            resizeMode="cover"
-          />
-        ) : (
-          <View
-            style={{
-              height: 220,
-              borderRadius: 12,
-              backgroundColor: "#e0e0e0",
-              marginBottom: 16,
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <Ionicons name="image-outline" size={60} color="#999" />
+        {/* 🖼️ Header Image */}
+        <View style={styles.imageWrapper}>
+          {news.imageUrl ? (
+            <>
+              <Image source={{ uri: news.imageUrl }} style={styles.image} />
+              <LinearGradient
+                colors={["rgba(0,0,0,0.1)", "rgba(0,0,0,0.6)"]}
+                style={StyleSheet.absoluteFillObject}
+              />
+            </>
+          ) : (
+            <View style={styles.imagePlaceholder}>
+              <Ionicons name="image-outline" size={60} color="#aaa" />
+            </View>
+          )}
+        </View>
+
+        {/* 📰 Article Content */}
+        <View style={styles.content}>
+          <Text style={styles.title}>{news.title}</Text>
+
+          <View style={styles.metaRow}>
+            <Ionicons name="calendar-outline" size={14} color="#777" />
+            <Text style={styles.metaText}>
+              Published on {formatDate(news.createdAt)}
+            </Text>
           </View>
-        )}
 
-        {/* 🧾 Title */}
-        <Text
-          style={{
-            fontSize: 24,
-            fontWeight: "bold",
-            color: "#222",
-            marginBottom: 6,
-          }}
-        >
-          {title}
-        </Text>
+          <View style={styles.divider} />
 
-        {/* 📅 Date and Time */}
-        <Text
-          style={{
-            color: "#777",
-            fontSize: 14,
-            marginBottom: 16,
-          }}
-        >
-          {formatDateTime(createdAt) || "Date not available"}
-        </Text>
-
-        {/* 📝 Description */}
-        <View
-          style={{
-            backgroundColor: "#f9f9f9",
-            borderRadius: 10,
-            padding: 14,
-            elevation: 2,
-            shadowColor: "#000",
-            shadowOpacity: 0.05,
-            shadowOffset: { width: 0, height: 2 },
-            shadowRadius: 4,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 16,
-              lineHeight: 24,
-              color: "#333",
-              textAlign: "justify",
-            }}
-          >
-            {description}
-          </Text>
+          <Text style={styles.description}>{news.description}</Text>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  scrollContainer: {
+    flexGrow: 1,
+    backgroundColor: "#fff",
+    paddingBottom: 60,
+  },
+  imageWrapper: {
+    width: "100%",
+    height: width * 0.6,
+    position: "relative",
+    backgroundColor: "#eee",
+  },
+  image: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+  imagePlaceholder: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  backBtn: {
+    position: "absolute",
+    top: 50,
+    left: 16,
+    zIndex: 10,
+    backgroundColor: "rgba(255,255,255,0.9)",
+    padding: 8,
+    borderRadius: 22,
+    elevation: 2,
+  },
+  content: {
+    padding: 18,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#111",
+    lineHeight: 28,
+    marginBottom: 10,
+  },
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 14,
+  },
+  metaText: {
+    color: "#777",
+    fontSize: 13,
+    marginLeft: 5,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#eee",
+    marginVertical: 12,
+  },
+  description: {
+    fontSize: 16,
+    lineHeight: 26,
+    color: "#333",
+    textAlign: "justify",
+  },
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+});

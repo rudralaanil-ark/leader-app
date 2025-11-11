@@ -48,6 +48,7 @@ export default function TabsLayout() {
           },
         }}
       />
+
       <Tabs.Screen
         name="News"
         options={{
@@ -55,9 +56,10 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="newspaper" size={size} color={color} />
           ),
-          headerStyle: {},
+          headerTitleAlign: "left",
         }}
       />
+
       <Tabs.Screen
         name="Events"
         options={{
@@ -76,35 +78,6 @@ export default function TabsLayout() {
           ),
         }}
       />
-      {/* <Tabs.Screen
-        name="User"
-        options={{
-          headerTitle: "User",
-          tabBarIcon: ({ color, size, focused }) => (
-            <View
-              style={{
-                borderWidth: focused ? 2 : 0,
-                borderColor: focused ? "#007AFF" : "transparent",
-                borderRadius: size,
-                padding: 1,
-              }}
-            >
-              <Image
-                source={
-                  user?.profileImage
-                    ? { uri: user?.profileImage }
-                    : require("@/assets/images/profile.png") // fallback image
-                }
-                style={{
-                  width: size,
-                  height: size,
-                  borderRadius: size / 2,
-                }}
-              />
-            </View>
-          ),
-        }}
-      /> */}
 
       <Tabs.Screen
         name="User"

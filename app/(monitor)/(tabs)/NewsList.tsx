@@ -1,292 +1,256 @@
-import { Ionicons } from "@expo/vector-icons";
-import { useFocusEffect } from "@react-navigation/native";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
-import React, { useCallback, useState } from "react";
-import { SafeAreaView } from "react-native-safe-area-context";
-
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Dimensions,
   FlatList,
   Image,
+  RefreshControl,
+  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { deleteNews, listenToNews } from "./api/news";
 
-const BACKEND_URL = "http://10.141.73.170:8080"; // ✅ Update this to correct IP
+const { width } = Dimensions.get("window");
 
 export default function NewsList() {
   const router = useRouter();
-  const [news, setNews] = useState([]);
+  const [news, setNews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // 🔹 Fetch News
-  const fetchNews = async () => {
+  const loadNews = useCallback(() => {
     setLoading(true);
-    try {
-      const res = await fetch(`${BACKEND_URL}/news/all`);
-      const data = await res.json();
-      setNews(Array.isArray(data) ? data : data.news || []);
-    } catch (err) {
-      console.error("Error fetching news:", err);
-    } finally {
+    const unsub = listenToNews((data) => {
+      setNews(data);
       setLoading(false);
-    }
-  };
+      setRefreshing(false);
+    });
+    return unsub;
+  }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchNews();
-    }, [])
-  );
+  useEffect(() => {
+    const unsub = loadNews();
+    return unsub;
+  }, [loadNews]);
 
-  // 🗑️ Delete News
-  const handleDelete = (id: number) => {
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    loadNews();
+  }, [loadNews]);
+
+  const handleDelete = (id: string) => {
     Alert.alert("Delete News", "Are you sure you want to delete this news?", [
       { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            const res = await fetch(`${BACKEND_URL}/news/delete/${id}`, {
-              method: "DELETE",
-            });
-            if (res.ok) {
-              Alert.alert("Deleted ✅", "News deleted successfully!");
-              fetchNews();
-            } else {
-              Alert.alert("Error", "Failed to delete news.");
-            }
-          } catch (err) {
-            console.error("Delete failed:", err);
-            Alert.alert("Error", "Something went wrong.");
-          }
-        },
-      },
+      { text: "Delete", style: "destructive", onPress: () => deleteNews(id) },
     ]);
   };
 
-  if (loading)
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" color="#007bff" />
-        <Text style={{ marginTop: 10, color: "#555" }}>Loading news...</Text>
-      </View>
-    );
+  const handleEdit = (id: string) => {
+    router.push({
+      pathname: "/(monitor)/(tabs)/AddNews",
+      params: { id },
+    });
+  };
 
-  return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: "#fff",
-          padding: 16,
-          paddingTop: 10,
-        }}
-      >
-        <Text
-          style={{
-            fontSize: 22,
-            fontWeight: "bold",
-            marginBottom: 10,
-            // paddingTop: 10,
-          }}
-        >
-          Manage News 📰
+  const handleViewDetails = (id: string) => {
+    router.push({
+      pathname: "/(monitor)/(tabs)/NewsDetails",
+      params: { id },
+    });
+  };
+
+  const formatDate = (timestamp: any) => {
+    if (!timestamp) return "—";
+    try {
+      const date =
+        typeof timestamp.toDate === "function"
+          ? timestamp.toDate()
+          : new Date(timestamp);
+      return date.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+    } catch {
+      return "—";
+    }
+  };
+
+  const renderItem = ({ item }: { item: any }) => (
+    <TouchableOpacity
+      style={styles.card}
+      activeOpacity={0.9}
+      onPress={() => handleViewDetails(item.id)}
+    >
+      {item.imageUrl ? (
+        <Image source={{ uri: item.imageUrl }} style={styles.image} />
+      ) : (
+        <View style={styles.placeholder}>
+          <Ionicons name="image-outline" size={42} color="#999" />
+        </View>
+      )}
+
+      <View style={styles.overlay} />
+
+      <View style={styles.content}>
+        <Text style={styles.title} numberOfLines={2}>
+          {item.title}
+        </Text>
+        <Text style={styles.desc} numberOfLines={2}>
+          {item.description}
         </Text>
 
-        {news.length === 0 ? (
-          <View
-            style={{
-              flex: 1,
-              justifyContent: "center",
-              alignItems: "center",
-              paddingTop: 100,
-            }}
-          >
-            <Ionicons name="newspaper-outline" size={64} color="#ccc" />
-            <Text style={{ color: "#888", marginTop: 8 }}>
-              No news available. Please add some news.
-            </Text>
+        <View style={styles.footer}>
+          <Text style={styles.meta}>{formatDate(item.createdAt)}</Text>
+
+          <View style={styles.actions}>
+            <TouchableOpacity
+              onPress={() => handleEdit(item.id)}
+              style={styles.iconButton}
+            >
+              <Ionicons name="create-outline" size={26} color="#fff" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => handleDelete(item.id)}
+              style={[styles.iconButton, { marginLeft: 14 }]}
+            >
+              <Ionicons name="trash-outline" size={26} color="#ff5a5a" />
+            </TouchableOpacity>
           </View>
-        ) : (
-          <FlatList
-            data={news}
-            refreshing={loading}
-            onRefresh={fetchNews}
-            keyExtractor={(item) => item.id.toString()}
-            showsVerticalScrollIndicator={false}
-            renderItem={({ item }) => (
-              <View
-                style={{
-                  backgroundColor: "#f9f9f9",
-                  marginBottom: 16,
-                  borderRadius: 12,
-                  padding: 12,
-                  elevation: 3,
-                  shadowColor: "#000",
-                  shadowOpacity: 0.05,
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowRadius: 4,
-                }}
-              >
-                {/* Image */}
-                {item.imageUrl && (
-                  <Image
-                    source={{ uri: item.imageUrl }}
-                    style={{
-                      width: "100%",
-                      height: 160,
-                      borderRadius: 10,
-                      marginBottom: 8,
-                    }}
-                    resizeMode="cover"
-                  />
-                )}
-
-                {/* Title */}
-                <Text
-                  style={{
-                    fontWeight: "bold",
-                    fontSize: 17,
-                    color: "#222",
-                    marginBottom: 4,
-                  }}
-                >
-                  {item.title}
-                </Text>
-
-                {/* Description Preview */}
-                <Text
-                  style={{ color: "#555", lineHeight: 20 }}
-                  numberOfLines={2}
-                  ellipsizeMode="tail"
-                >
-                  {item.description}
-                </Text>
-
-                {/* Date */}
-                <Text
-                  style={{
-                    fontSize: 12,
-                    color: "#999",
-                    marginTop: 6,
-                    alignSelf: "flex-end",
-                  }}
-                >
-                  {new Date(item.createdAt).toLocaleDateString()}
-                </Text>
-
-                {/* Action Buttons */}
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "flex-end",
-                    marginTop: 10,
-                    gap: 10,
-                  }}
-                >
-                  {/* View */}
-                  <TouchableOpacity
-                    onPress={() =>
-                      router.push({
-                        pathname: "/(monitor)/(tabs)/NewsDetails",
-                        params: {
-                          id: item.id,
-                          title: item.title,
-                          description: item.description,
-                          imageUrl: item.imageUrl,
-                          createdAt: item.createdAt,
-                        },
-                      })
-                    }
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      paddingVertical: 6,
-                      paddingHorizontal: 10,
-                      borderRadius: 8,
-                      backgroundColor: "#E3F2FD",
-                    }}
-                  >
-                    <Ionicons name="eye-outline" size={18} color="#007bff" />
-                    <Text style={{ color: "#007bff", marginLeft: 4 }}>
-                      View
-                    </Text>
-                  </TouchableOpacity>
-
-                  {/* Edit */}
-                  <TouchableOpacity
-                    onPress={() =>
-                      router.push({
-                        pathname: "/(monitor)/(tabs)/EditNews",
-                        params: {
-                          id: item.id,
-                          title: item.title,
-                          description: item.description,
-                          imageUrl: item.imageUrl,
-                        },
-                      })
-                    }
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      paddingVertical: 6,
-                      paddingHorizontal: 10,
-                      borderRadius: 8,
-                      backgroundColor: "#FFF3E0",
-                    }}
-                  >
-                    <Ionicons name="create-outline" size={18} color="#FB8C00" />
-                    <Text style={{ color: "#FB8C00", marginLeft: 4 }}>
-                      Edit
-                    </Text>
-                  </TouchableOpacity>
-
-                  {/* Delete */}
-                  <TouchableOpacity
-                    onPress={() => handleDelete(item.id)}
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      paddingVertical: 6,
-                      paddingHorizontal: 10,
-                      borderRadius: 8,
-                      backgroundColor: "#FFEBEE",
-                    }}
-                  >
-                    <Ionicons name="trash-outline" size={18} color="#D32F2F" />
-                    <Text style={{ color: "#D32F2F", marginLeft: 4 }}>
-                      Delete
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
-          />
-        )}
-
-        {/* Floating Add Button */}
-        <TouchableOpacity
-          onPress={() => router.push("/(monitor)/(tabs)/AddNews")}
-          style={{
-            position: "absolute",
-            bottom: 20,
-            right: 20,
-            backgroundColor: "#007bff",
-            width: 60,
-            height: 60,
-            borderRadius: 30,
-            justifyContent: "center",
-            alignItems: "center",
-            elevation: 5,
-          }}
-        >
-          <Ionicons name="add" size={32} color="#fff" />
-        </TouchableOpacity>
+        </View>
       </View>
+    </TouchableOpacity>
+  );
+
+  if (loading && !refreshing) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#007AFF" />
+      </View>
+    );
+  }
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#f6f7fb" }}>
+      <Text style={styles.header}>📰 Trending News</Text>
+
+      <FlatList
+        data={news}
+        keyExtractor={(i) => i.id}
+        renderItem={renderItem}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#007AFF"
+            colors={["#007AFF"]}
+          />
+        }
+        contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
+      />
+
+      <TouchableOpacity
+        style={styles.fab}
+        activeOpacity={0.9}
+        onPress={() => router.push("/(monitor)/(tabs)/AddNews")}
+      >
+        <Ionicons name="add" size={34} color="#fff" />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  header: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#111",
+    marginTop: 30,
+    marginLeft: 16,
+    marginBottom: 12,
+  },
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 18,
+    marginBottom: 20,
+    overflow: "hidden",
+    elevation: 5,
+  },
+  image: {
+    width: "100%",
+    height: width * 0.48,
+    resizeMode: "cover",
+  },
+  placeholder: {
+    width: "100%",
+    height: width * 0.48,
+    backgroundColor: "#e8e8e8",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.25)",
+  },
+  content: {
+    position: "absolute",
+    bottom: 0,
+    width: "100%",
+    padding: 16,
+    backgroundColor: "rgba(0,0,0,0.45)",
+  },
+  title: {
+    color: "#fff",
+    fontSize: 19,
+    fontWeight: "700",
+    marginBottom: 6,
+  },
+  desc: {
+    color: "#f2f2f2",
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 10,
+  },
+  footer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  meta: {
+    color: "#ddd",
+    fontSize: 13,
+  },
+  actions: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  iconButton: {
+    padding: 5,
+    borderRadius: 20,
+  },
+  fab: {
+    position: "absolute",
+    right: 22,
+    bottom: 30,
+    backgroundColor: "#007AFF",
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 9,
+  },
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});

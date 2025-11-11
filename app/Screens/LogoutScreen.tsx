@@ -1,5 +1,4 @@
 import { useAuth } from "@/contexts/AuthContext";
-import Colors from "@/data/Colors";
 import { format } from "date-fns";
 import { LinearGradient } from "expo-linear-gradient";
 import { LogOut } from "lucide-react-native";
@@ -23,10 +22,13 @@ export default function LogoutScreen() {
 
   return (
     <LinearGradient
-      colors={[Colors.primary, Colors.secondary, Colors.background]}
+      colors={["#E3F2FD", "#E1F5FE", "#F3E5F5"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
       style={styles.container}
     >
       <View style={styles.card}>
+        {/* 🧑 Profile Avatar */}
         <Image
           source={{
             uri:
@@ -36,12 +38,12 @@ export default function LogoutScreen() {
           style={styles.avatar}
         />
 
+        {/* User Info */}
         <Text style={styles.name}>{user?.fullName || "User"}</Text>
         <Text style={styles.email}>{user?.email}</Text>
-        <Text style={styles.role}>
-          Role: {user?.role?.toUpperCase() || "USER"}
-        </Text>
+        <Text style={styles.role}>{user?.role?.toUpperCase() || "USER"}</Text>
 
+        {/* Account Info */}
         <View style={styles.infoBox}>
           <Text style={styles.infoText}>
             📅 Joined:{" "}
@@ -54,9 +56,10 @@ export default function LogoutScreen() {
           </Text>
         </View>
 
+        {/* Logout Button */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <LinearGradient
-            colors={[Colors.secondary, Colors.primary]}
+            colors={["#007AFF", "#34C759"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.buttonGradient}
@@ -75,19 +78,20 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    paddingHorizontal: 20,
   },
   card: {
     width: "100%",
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    backgroundColor: "rgba(255,255,255,0.9)",
     borderRadius: 20,
-    padding: 25,
+    paddingVertical: 25,
+    paddingHorizontal: 20,
     alignItems: "center",
     shadowColor: "#000",
-    shadowOpacity: 0.25,
-    shadowRadius: 15,
-    elevation: 10,
-    backdropFilter: "blur(15px)",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 8,
+    elevation: 5,
   },
   avatar: {
     width: 100,
@@ -95,39 +99,39 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     marginBottom: 15,
     borderWidth: 2,
-    borderColor: "white",
+    borderColor: "#007AFF",
   },
   name: {
     fontSize: 22,
-    fontWeight: "bold",
-    color: "white",
+    fontWeight: "700",
+    color: "#111",
   },
   email: {
     fontSize: 15,
-    color: "#f0f0f0",
-    marginBottom: 5,
+    color: "#555",
+    marginTop: 2,
   },
   role: {
-    fontSize: 16,
-    color: "#fff",
+    fontSize: 14,
+    color: "#007AFF",
     fontWeight: "600",
-    backgroundColor: "rgba(255,255,255,0.2)",
-    paddingVertical: 4,
+    marginTop: 6,
+    backgroundColor: "#E3F2FD",
     paddingHorizontal: 10,
-    borderRadius: 10,
-    marginBottom: 15,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   infoBox: {
-    backgroundColor: "rgba(255,255,255,0.15)",
+    backgroundColor: "#F8F9FA",
     width: "100%",
-    padding: 15,
+    padding: 14,
     borderRadius: 12,
-    marginBottom: 25,
+    marginVertical: 20,
   },
   infoText: {
     fontSize: 14,
-    color: "white",
-    marginBottom: 8,
+    color: "#333",
+    marginBottom: 6,
   },
   logoutButton: {
     width: "100%",

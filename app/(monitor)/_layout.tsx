@@ -1,8 +1,8 @@
 // app/(monitor)/_layout.tsx
 // import { Stack } from "expo-router";
 import { useAuth } from "@/contexts/AuthContext";
-import { useEffect } from "react";
 import { Stack, useRouter } from "expo-router";
+import { useEffect } from "react";
 
 export default function MonitorLayout() {
   const { user, loading } = useAuth();
@@ -19,7 +19,17 @@ export default function MonitorLayout() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="AddNews"
+        options={{ presentation: "modal", title: "Add News" }}
+      />
+      <Stack.Screen name="NewsDetails" options={{ title: "News Details" }} />
+      <Stack.Screen
+        name="AddEvent"
+        options={{ presentation: "modal", title: "Add Event" }}
+      />
+      <Stack.Screen name="EventDetails" options={{ title: "Event Details" }} />
     </Stack>
   );
 }
