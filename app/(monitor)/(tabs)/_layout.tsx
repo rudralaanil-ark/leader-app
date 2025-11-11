@@ -31,34 +31,61 @@ export default function MonitorTabs() {
           href: null,
         }}
       />
+
       <Tabs.Screen
-        name="AddEvent"
+        name="NewsList"
         options={{
-          title: "Add Event",
+          title: "News",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="newspaper-outline" color={color} size={size} />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="EventsList"
+        options={{
+          title: "Events",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons
+              name="calendar-number-outline"
+              color={color}
+              size={size}
+            />
+          ),
+        }}
+      />
+
+      <Tabs.Screen
+        name="EventList"
+        options={{
+          title: "Events",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="calendar-outline" color={color} size={size} />
           ),
         }}
       />
 
-      <Tabs.Screen name="NewsList" options={{ title: "News" }} />
-
       <Tabs.Screen
-        name="Profile"
+        name="Monitor"
         options={{
-          title: "Profile",
+          title: "Monitor",
           tabBarIcon: ({ color, size, focused }) => (
             <ProfileTabIcon
-              imageUri={user?.profileImage}
-              size={size}
               color={color}
+              size={size}
               focused={focused}
+              imageUrl={user?.profileImage}
             />
           ),
         }}
       />
+
       <Tabs.Screen name="NewsDetails" options={{ href: null }} />
       <Tabs.Screen name="EditNews" options={{ href: null }} />
+      <Tabs.Screen name="EditEvent" options={{ href: null }} />
+      <Tabs.Screen name="AddEvent" options={{ href: null }} />
+      <Tabs.Screen name="EventDetails" options={{ href: null }} />
     </Tabs>
   );
 }

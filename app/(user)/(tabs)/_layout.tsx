@@ -127,6 +127,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="Survey" options={{ href: null }} />
       <Tabs.Screen name="Help" options={{ href: null }} />
       <Tabs.Screen name="NewsDetails" options={{ href: null }} />
+      <Tabs.Screen name="EventDetailsUser" options={{ href: null }} />
     </Tabs>
   );
 }
