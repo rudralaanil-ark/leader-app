@@ -11,9 +11,14 @@
     "ios": {
       "supportsTablet": true
     },
-
+    "splash": {
+      "image": "./assets/images/AshokLogo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F8FBFF"
+    },
     "android": {
       "package": "leaderapp.for.otp",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -41,13 +46,19 @@
           }
         }
       ],
-
       "@react-native-firebase/app",
-      "@react-native-firebase/auth"
+      "@react-native-firebase/auth",
+      "@react-native-firebase/firestore"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "effbbd06-43c8-47af-91b2-227902adc59e"
+      }
     }
   }
 }
