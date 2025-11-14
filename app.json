@@ -17,7 +17,7 @@
       "backgroundColor": "#F8FBFF"
     },
     "android": {
-      "package": "leaderapp.for.otp",
+      "package": "com.leaderapp",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -45,9 +45,7 @@
             "backgroundColor": "#000000"
           }
         }
-      ],
-      "@react-native-firebase/app",
-      "@react-native-firebase/auth"
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
