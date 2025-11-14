@@ -17,7 +17,7 @@
       "backgroundColor": "#F8FBFF"
     },
     "android": {
-      "package": "com.leaderapp",
+      "package": "leaderapp.for.otp",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
