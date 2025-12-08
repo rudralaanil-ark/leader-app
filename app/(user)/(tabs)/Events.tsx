@@ -1,38 +1,46 @@
-// user/(tabs)/Events.tsx
 import {
   listenToEvents,
   markInterested,
 } from "@/app/(monitor)/(tabs)/api/events";
 import { db } from "@/configs/FirebaseConfig";
+import Colors from "@/data/Colors";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { getAuth } from "firebase/auth";
 import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  Animated,
   Dimensions,
   FlatList,
   ImageBackground,
   RefreshControl,
+  Share,
+  StatusBar,
   StyleSheet,
   Text,
   ToastAndroid,
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
 
 export default function Events() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+
   const [events, setEvents] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [interestedMap, setInterestedMap] = useState<Record<string, boolean>>(
     {}
   );
-  const [now, setNow] = useState(new Date()); // ✅ For countdown updates
+
+  const [tabIndex, setTabIndex] = useState(0);
+  const scrollX = new Animated.Value(0);
 
   const auth = getAuth();
   const currentUser = auth.currentUser;
@@ -46,18 +54,8 @@ export default function Events() {
     return unsub;
   }, []);
 
-  // 🔄 Update countdown every 1 minute
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setNow(new Date());
-    }, 60000); // update every 60 sec
-    return () => clearInterval(timer);
-  }, []);
-
-  // ✅ Listen to user’s interest per event
   useEffect(() => {
     if (!currentUser) return;
-
     const unsubscribers = events.map((ev) =>
       onSnapshot(
         doc(db, "events", ev.id, "interested", currentUser.uid),
@@ -69,7 +67,6 @@ export default function Events() {
         }
       )
     );
-
     return () => unsubscribers.forEach((u) => u && u());
   }, [events, currentUser]);
 
@@ -82,6 +79,77 @@ export default function Events() {
     setTimeout(() => unsub(), 1000);
   };
 
+  const now = new Date();
+
+  const upcomingEvents = events
+    .filter((ev) => {
+      const dt = ev.dateTime?.toDate ? ev.dateTime.toDate() : null;
+      return dt && dt >= now;
+    })
+    .sort((a, b) => {
+      const da = a.dateTime?.toDate();
+      const db = b.dateTime?.toDate();
+      return da - db;
+    });
+
+  const pastEvents = events
+    .filter((ev) => {
+      const dt = ev.dateTime?.toDate ? ev.dateTime.toDate() : null;
+      return dt && dt < now;
+    })
+    .sort((a, b) => {
+      const da = a.dateTime?.toDate();
+      const db = b.dateTime?.toDate();
+      return db - da;
+    });
+
+  const DATA = [upcomingEvents, pastEvents];
+
+  const shareEvent = async (item: any) => {
+    try {
+      const d = item.dateTime?.toDate ? item.dateTime.toDate() : null;
+      const dateStr = d
+        ? `${d.toLocaleDateString(undefined, {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          })} • ${d
+            .toLocaleTimeString(undefined, {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            })
+            .toLowerCase()}`
+        : "TBA";
+      const lines = [
+        item.title || "Event",
+        `Date: ${dateStr}`,
+        `Venue: ${item.venue || "TBA"}`,
+      ];
+      await Share.share({ message: lines.join("\n") });
+    } catch (e) {
+      ToastAndroid.show("Unable to share", ToastAndroid.SHORT);
+    }
+  };
+
+  const formatBadgeParts = (eventDate: any) => {
+    if (!eventDate) return { top: "", bottom: "" };
+    const d = eventDate.toDate ? eventDate.toDate() : new Date(eventDate);
+    if (!(d instanceof Date) || isNaN(d.getTime()))
+      return { top: "", bottom: "" };
+    const day = d.getDate().toString().padStart(2, "0");
+    const month = d.toLocaleString(undefined, { month: "short" });
+    const time = d
+      .toLocaleTimeString(undefined, {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      })
+      .toLowerCase()
+      .replace(":", " : ");
+    return { top: `${day} ${month}`, bottom: time };
+  };
+
   const toggleInterest = async (eventId: string) => {
     try {
       if (!currentUser) {
@@ -89,7 +157,6 @@ export default function Events() {
         return;
       }
 
-      // Optimistic local update (instant)
       setInterestedMap((prev) => ({
         ...prev,
         [eventId]: !prev[eventId],
@@ -116,38 +183,14 @@ export default function Events() {
     }
   };
 
-  // ⏳ Helper to calculate countdown text
-  const calculateCountdown = (eventDate: any) => {
-    if (!eventDate) return "";
-    const eventTime = eventDate.toDate
-      ? eventDate.toDate()
-      : new Date(eventDate);
-    const diffMs = eventTime.getTime() - now.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffMs <= 0 && diffMs > -3600000) return "Ongoing"; // within 1 hour after start
-    if (diffMs <= -3600000) return "Event Ended"; // after 1 hour
-    if (diffDays > 0) return `${diffDays} day${diffDays > 1 ? "s" : ""} to go`;
-    if (diffHours > 0)
-      return `${diffHours} hour${diffHours > 1 ? "s" : ""} to go`;
-    if (diffMins > 0) return `${diffMins} min${diffMins > 1 ? "s" : ""} to go`;
-    return "Starting soon";
-  };
-
-  const renderItem = ({ item }: { item: any }) => {
+  const renderEventCard = ({ item }: { item: any }) => {
     const interested = interestedMap[item.id] || false;
-    const countdown = calculateCountdown(item.dateTime);
-    const eventDate = item.dateTime?.toDate ? item.dateTime.toDate() : null;
-
-    // ✅ Event ended more than 1 hour ago?
-    const ended = eventDate && now.getTime() - eventDate.getTime() > 3600000;
+    const { top, bottom } = formatBadgeParts(item.dateTime);
 
     return (
       <TouchableOpacity
-        style={[styles.card, ended && { opacity: 0.6 }]} // ✅ fade effect
         activeOpacity={0.9}
+        style={styles.card}
         onPress={() =>
           router.push({
             pathname: "./EventDetailsUser",
@@ -155,177 +198,345 @@ export default function Events() {
           })
         }
       >
-        <View style={styles.cardInner}>
-          <ImageBackground
-            source={
-              item.imageUrl
-                ? { uri: item.imageUrl }
-                : require("@/assets/images/react-logo.png")
-            }
-            style={styles.image}
-            imageStyle={[
-              styles.imageStyle,
-              ended && { tintColor: "gray", overlayColor: "gray" }, // ✅ grayscale effect
-            ]}
-          >
-            <LinearGradient
-              colors={["transparent", "rgba(0,0,0,0.7)"]}
-              style={styles.overlay}
-            />
+        <ImageBackground
+          source={
+            item.imageUrl
+              ? { uri: item.imageUrl }
+              : require("@/assets/images/react-logo.png")
+          }
+          style={styles.image}
+          imageStyle={styles.imageStyle}
+        >
+          <View style={styles.dateBadge}>
+            <Text style={styles.dateTop}>{top}</Text>
+            <Text style={styles.dateBottom}>{bottom}</Text>
+          </View>
+        </ImageBackground>
 
-            {/* ⏱️ Countdown Badge */}
-            <View
-              style={[
-                styles.countdownBadge,
-                countdown === "Event Ended" && styles.badgeEnded,
-              ]}
+        <View style={styles.body}>
+          <View style={styles.row}>
+            <Text style={styles.label}>Event :</Text>
+            <Text style={styles.event} numberOfLines={2}>
+              {item.title || "-"}
+            </Text>
+          </View>
+
+          <View style={styles.row}>
+            <Text style={styles.label}>Venue :</Text>
+            <Text style={styles.venue} numberOfLines={1}>
+              {item.venue || "—"}
+            </Text>
+          </View>
+
+          <View style={styles.actions}>
+            <TouchableOpacity
+              style={[styles.comingBtn, interested && styles.comingBtnActive]}
+              onPress={(e) => {
+                e.stopPropagation();
+                toggleInterest(item.id);
+              }}
             >
-              <Text style={styles.countdownText}>{countdown}</Text>
-            </View>
-
-            <View style={styles.textContainer}>
-              <Text style={styles.title}>{item.title}</Text>
-
-              <View style={styles.infoRow}>
-                <Ionicons name="calendar-outline" size={14} color="#fff" />
-                <Text style={styles.meta}>
-                  {item.dateTime?.toDate?.().toLocaleDateString?.()}
-                </Text>
-              </View>
-
-              {item.venue ? (
-                <View style={styles.infoRow}>
-                  <Ionicons name="location-outline" size={14} color="#fff" />
-                  <Text style={styles.meta}>{item.venue}</Text>
-                </View>
-              ) : null}
-
-              {/* ✅ Interested Button */}
-              <TouchableOpacity
+              <Ionicons
+                name={interested ? "checkmark" : "checkmark-outline"}
+                size={16}
+                color={interested ? Colors.textInverse : Colors.text}
+                style={{ marginRight: 6 }}
+              />
+              <Text
                 style={[
-                  styles.interestedButton,
-                  interested && styles.interestedActive,
+                  styles.comingText,
+                  interested && styles.comingTextActive,
                 ]}
-                onPress={() => toggleInterest(item.id)}
-                disabled={ended} // ❌ disable if event over
               >
-                <Ionicons
-                  name={interested ? "heart" : "heart-outline"}
-                  size={18}
-                  color="#fff"
-                  style={{ marginRight: 4 }}
-                />
-                <Text style={{ color: "#fff", fontWeight: "600" }}>
-                  {interested ? "Interested ✓" : "Interested"}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </ImageBackground>
+                I am coming
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.iconBtn}
+              onPress={(e) => {
+                e.stopPropagation();
+                shareEvent(item);
+              }}
+            >
+              <Ionicons name="share-outline" size={20} color={Colors.text} />
+            </TouchableOpacity>
+          </View>
         </View>
       </TouchableOpacity>
     );
   };
 
-  return (
-    <View style={{ flex: 1, backgroundColor: "#f9f9f9", paddingTop: 10 }}>
-      {/* <Text style={styles.heading}>Upcoming Events</Text> */}
+  if (loading)
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: Colors.background,
+          paddingTop: insets.top,
+        }}
+      >
+        <StatusBar backgroundColor={Colors.headerBackground} />
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+          <Text style={{ color: Colors.textMuted, marginTop: 8 }}>
+            Loading events...
+          </Text>
+        </View>
+      </View>
+    );
 
-      <FlatList
-        data={events}
-        renderItem={renderItem}
-        keyExtractor={(i) => i.id}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        ListEmptyComponent={
-          <View style={styles.center}>
-            <Text style={{ color: "#888" }}>No events available</Text>
-          </View>
-        }
-      />
+  return (
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: Colors.headerBackground,
+        paddingTop: insets.top,
+        // paddingBottom: insets.bottom + 20,
+      }}
+    >
+      <StatusBar backgroundColor={Colors.headerBackground} />
+
+      <View
+        // edges={["bottom"]}
+        style={{ flex: 1, backgroundColor: Colors.backgroundSecondary }}
+      >
+        {/* NEW CLEAN TAB BAR */}
+        <View style={styles.tabs}>
+          <TouchableOpacity
+            style={styles.tabItem}
+            onPress={() => tabRef.scrollToIndex({ index: 0 })}
+          >
+            <Text
+              style={[styles.tabText, tabIndex === 0 && styles.tabTextActive]}
+            >
+              Upcoming
+            </Text>
+            {tabIndex === 0 && <View style={styles.tabUnderline} />}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.tabItem}
+            onPress={() => tabRef.scrollToIndex({ index: 1 })}
+          >
+            <Text
+              style={[styles.tabText, tabIndex === 1 && styles.tabTextActive]}
+            >
+              Past Events
+            </Text>
+            {tabIndex === 1 && <View style={styles.tabUnderline} />}
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.tabsDivider} />
+
+        {/* SWIPE PAGES */}
+        <FlatList
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          data={DATA}
+          onScroll={(e) => {
+            const x = e.nativeEvent.contentOffset.x;
+            setTabIndex(Math.round(x / width));
+          }}
+          ref={(ref) => (tabRef = ref)}
+          renderItem={({ item }) => (
+            <FlatList
+              data={item}
+              keyExtractor={(i) => i.id}
+              renderItem={renderEventCard}
+              showsVerticalScrollIndicator={false}
+              style={{ width }}
+              contentContainerStyle={{
+                paddingHorizontal: 12,
+                paddingBottom: 100,
+              }}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  colors={[Colors.primary]}
+                  tintColor={Colors.primary}
+                />
+              }
+              ListEmptyComponent={
+                <View style={styles.center}>
+                  <Text style={{ color: Colors.textMuted }}>
+                    No events found
+                  </Text>
+                </View>
+              }
+            />
+          )}
+          keyExtractor={(_, index) => index.toString()}
+        />
+      </View>
     </View>
   );
 }
 
+let tabRef: any = null;
+
 const styles = StyleSheet.create({
-  heading: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#007AFF",
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  card: {
-    marginBottom: 10,
-    borderRadius: 16,
-    overflow: "hidden",
-    elevation: 4,
-    backgroundColor: "#fff",
-  },
-  cardInner: { borderRadius: 16, overflow: "hidden" },
-  image: {
-    width: "100%",
-    height: width * 0.55,
-    justifyContent: "flex-end",
-  },
-  imageStyle: { borderRadius: 16 },
-  overlay: { ...StyleSheet.absoluteFillObject, borderRadius: 16 },
-  countdownBadge: {
-    position: "absolute",
-    top: 12,
-    right: 12,
-    backgroundColor: "rgba(0,122,255,0.95)",
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 18,
-    elevation: 3, // ✅ subtle shadow for depth
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-  },
-  badgeEnded: {
-    backgroundColor: "rgba(90,90,90,0.9)",
-  },
-  countdownText: {
-    color: "#fff",
-    fontSize: 14, // ✅ larger text
-    fontWeight: "700",
-    letterSpacing: 0.3,
-  },
-  textContainer: {
-    position: "absolute",
-    bottom: 15,
-    left: 15,
-    right: 15,
-  },
-  title: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 5,
-  },
-  infoRow: {
+  /* ---------------- TAB BAR UPDATED ---------------- */
+
+  tabs: {
+    backgroundColor: Colors.headerBackground,
     flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 2,
+    justifyContent: "space-around",
+    paddingVertical: 5,
   },
-  meta: { color: "#fff", fontSize: 13, marginLeft: 6 },
-  interestedButton: {
-    flexDirection: "row",
+
+  tabItem: {
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(0,122,255,0.8)",
-    borderRadius: 30,
     paddingVertical: 6,
+  },
+
+  tabText: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+    fontWeight: "500",
+  },
+
+  tabTextActive: {
+    color: Colors.textActive,
+    fontWeight: "700",
+  },
+
+  tabUnderline: {
+    marginTop: 6,
+    height: 3,
+    width: "100%",
+    backgroundColor: Colors.textSecondary,
+    borderRadius: 20,
+  },
+
+  tabsDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
+    width: "100%",
+    marginBottom: 4,
+  },
+
+  /* -------- REMAINING STYLES UNTOUCHED -------- */
+
+  card: {
+    marginBottom: 8,
+    marginTop: 10,
+    borderRadius: 16,
+    overflow: "hidden",
+    backgroundColor: Colors.elevatedCard,
+    shadowColor: Colors.shadow,
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  image: {
+    width: "100%",
+    height: width * 0.7,
+    justifyContent: "flex-end",
+  },
+  imageStyle: {
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  dateBadge: {
+    position: "absolute",
+    left: 20,
+    bottom: -20,
+    backgroundColor: Colors.primary,
+    paddingVertical: 12,
     paddingHorizontal: 12,
-    marginTop: 8,
-    alignSelf: "flex-start",
+    borderRadius: 12,
+    minWidth: 90,
+    alignItems: "center",
+    shadowColor: Colors.shadow,
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  interestedActive: {
-    backgroundColor: "rgba(52,199,89,0.9)",
+  dateTop: {
+    color: Colors.textInverse,
+    fontSize: 20,
+    fontWeight: "800",
   },
-  center: { flex: 1, alignItems: "center", justifyContent: "center" },
+  dateBottom: {
+    color: Colors.textInverse,
+    fontSize: 18,
+    marginTop: 2,
+    fontWeight: "600",
+  },
+  body: {
+    zIndex: -1,
+    paddingHorizontal: 14,
+    paddingTop: 20,
+    paddingBottom: 15,
+    backgroundColor: Colors.elevatedCard,
+  },
+  row: {
+    flexDirection: "row",
+    marginTop: 6,
+  },
+  label: {
+    color: Colors.textPrimary,
+    width: 64,
+    fontSize: 16,
+    fontWeight: "400",
+  },
+  event: {
+    flex: 1,
+    color: Colors.textPrimary,
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  venue: {
+    flex: 1,
+    color: Colors.textPrimary,
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  actions: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
+    marginRight: 15,
+    alignSelf: "flex-end",
+  },
+  comingBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1.2,
+    backgroundColor: "#F1F1F3",
+  },
+  comingBtnActive: {
+    backgroundColor: Colors.primary,
+  },
+  comingText: {
+    color: Colors.text,
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  comingTextActive: {
+    color: Colors.textInverse,
+  },
+  iconBtn: {
+    marginLeft: 18,
+    height: 36,
+    width: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    backgroundColor: Colors.accent,
+  },
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });

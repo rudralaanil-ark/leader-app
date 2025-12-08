@@ -25,7 +25,7 @@ import {
   getEvent,
   getInterestedUsers,
   listenInterestedCount,
-} from "./api/events";
+} from "../(monitor)/(tabs)/api/events";
 
 if (
   Platform.OS === "android" &&
@@ -51,7 +51,7 @@ export default function EventDetails() {
   useFocusEffect(
     React.useCallback(() => {
       const onBackPress = () => {
-        router.replace("/(monitor)/(tabs)/EventList");
+        router.back();
         return true;
       };
       const subscription = BackHandler.addEventListener(
@@ -164,7 +164,7 @@ export default function EventDetails() {
                 {/* 🔙 Back Button */}
                 <TouchableOpacity
                   style={styles.backBtn}
-                  onPress={() => router.replace("/(monitor)/(tabs)/EventList")}
+                  onPress={() => router.back()}
                 >
                   <Ionicons name="arrow-back" size={22} color="#fff" />
                 </TouchableOpacity>

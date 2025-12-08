@@ -24,7 +24,7 @@ const MenuButton: React.FC<MenuButtonProps> = ({
       <Ionicons
         name={icon}
         size={28}
-        color={active ? "#fff" : Colors.primary}
+        color={active ? "#fff" : Colors.homeIcon}
       />
       <Text style={[styles.label, active && { color: "#fff" }]}>{label}</Text>
     </TouchableOpacity>
@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     margin: 10,
-    borderColor: Colors.primary,
+    borderColor: Colors.homeCardBoarder,
     borderWidth: 2,
   },
   active: {
@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
   label: {
     marginTop: 6,
     fontSize: 14,
-    color: Colors.text,
+    color: Colors.textWhite,
     fontWeight: "500",
   },
 });

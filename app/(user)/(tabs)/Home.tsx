@@ -1,6 +1,8 @@
 import MenuButton from "@/componenets/Home/MenuButton";
 import GlossyBackground from "@/componenets/Shared/GlossyBackground";
 import Header from "@/componenets/Shared/Header";
+import Colors from "@/data/Colors";
+import GlossyTheme from "@/data/GlossyTheme";
 import LeaderInfo from "@/data/LeaderInfo";
 import { router } from "expo-router";
 import React, { useState } from "react";
@@ -16,9 +18,17 @@ export default function Home() {
       route: "/(tabs)/Profile",
     },
     { icon: "newspaper-outline", label: "News", route: "/(tabs)/News" },
-    { icon: "images-outline", label: "Gallery", route: "/(tabs)/Gallery" },
+    {
+      icon: "images-outline",
+      label: "Gallery",
+      route: "/(tabs)/Gallery",
+    },
     { icon: "videocam-outline", label: "Video", route: "/(tabs)/Video" },
-    { icon: "calendar-outline", label: "Events", route: "/(tabs)/Events" },
+    {
+      icon: "calendar-outline",
+      label: "Events",
+      route: "/(tabs)/Events",
+    },
     {
       icon: "chatbubbles-outline",
       label: "Opinion Poll",
@@ -29,15 +39,29 @@ export default function Home() {
       label: "Complaint Box",
       route: "/(tabs)/ComplaintBox",
     },
-    { icon: "clipboard-outline", label: "Survey", route: "/(tabs)/Survey" },
-    { icon: "help-circle-outline", label: "Help", route: "/(tabs)/Help" },
+    {
+      icon: "clipboard-outline",
+      label: "Survey",
+      route: "/(tabs)/Survey",
+    },
+    {
+      icon: "help-circle-outline",
+      label: "Help",
+      route: "/(user)/(tabs)/Help",
+    },
   ];
 
   return (
-    <GlossyBackground>
+    <GlossyBackground
+      gradient={GlossyTheme.gradient.colors}
+      blur={GlossyTheme.blur}
+    >
+      {/* <StatusBar barStyle="dark-content" backgroundColor={Colors.background} /> */}
+
       <ScrollView
         style={styles.container}
-        contentContainerStyle={{ alignItems: "center" }}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
       >
         <Header
           name={LeaderInfo.name}
@@ -55,7 +79,7 @@ export default function Home() {
               active={active === item.label}
               onPress={() => {
                 setActive(item.label);
-                router.push(item.route);
+                router.push(item.route as any);
               }}
             />
           ))}
@@ -70,12 +94,25 @@ const styles = StyleSheet.create({
     flex: 1,
     // backgroundColor: Colors.background,
   },
+  contentContainer: {
+    alignItems: "center",
+    paddingBottom: 80,
+  },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
     marginTop: 5,
-    padding: 10,
-    // backgroundColor: Colors.background,
+    padding: 5,
+    // backgroundColor: Colors.card,
+    borderRadius: 20,
+    shadowColor: Colors.strongShadow,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 6,
+    // borderWidth: 0,
+    // borderColor: Colors.border,
+    width: "98%",
   },
 });

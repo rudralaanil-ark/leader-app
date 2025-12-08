@@ -1,10 +1,7 @@
-import { View, Text } from "react-native";
+// app/(user)/(tabs)/Poll.tsx
 import React from "react";
+import PollList from "@/app/(shared)/polls/PollList";
 
-export default function Poll() {
-  return (
-    <View>
-      <Text>Poll</Text>
-    </View>
-  );
+export default function PollTab() {
+  return <PollList />;
 }

@@ -85,7 +85,7 @@ export default function EventList() {
             event={item}
             onPress={() =>
               router.push({
-                pathname: "./EventDetails",
+                pathname: "/(shared)/EventDetails",
                 params: { id: item.id },
               })
             }

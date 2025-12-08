@@ -17,11 +17,15 @@ import {
 const eventRef = collection(db, "events");
 
 /** 🆕 Create a new event */
-export const createEvent = async (data: any) => {
+export const createEvent = async (data: any, userId: string) => {
+  if (!userId) throw new Error("User ID missing!");
+
   const docRef = await addDoc(eventRef, {
     ...data,
+    createdBy: userId,
     createdAt: serverTimestamp(),
   });
+
   return docRef.id;
 };
 

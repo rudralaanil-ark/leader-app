@@ -60,7 +60,7 @@ export default function NewsList() {
 
   const handleViewDetails = (id: string) => {
     router.push({
-      pathname: "/(monitor)/(tabs)/NewsDetails",
+      pathname: "/(shared)/NewsDetails",
       params: { id },
     });
   };
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "700",
     color: "#111",
-    marginTop: 30,
+    marginTop: 20,
     marginLeft: 16,
     marginBottom: 12,
   },

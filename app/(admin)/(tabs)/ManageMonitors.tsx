@@ -1,137 +1,80 @@
-import { createUserInFirestore } from "@/app/api/users";
-// import { auth } from "@/configs/FirebaseConfig";
-import { getSecondaryAuth } from "@/configs/FirebaseConfig";
-import { useAuth } from "@/contexts/AuthContext";
+import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
+import React from "react";
+import { StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
 import Colors from "@/data/Colors";
-import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
-import React, { useState } from "react";
-// import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
+import ContentCreatedScreen from "../content/ContentCreatedScreen";
+import EditMonitorsScreen from "../edit-monitors/EditMonitorsScreen";
 
-// import { auth } from "@/configs/FirebaseConfig";
-import {
-  ActivityIndicator,
-  Text,
-  TextInput,
-  ToastAndroid,
-  TouchableOpacity,
-  View,
-} from "react-native";
+const Tab = createMaterialTopTabNavigator();
 
-export default function ManageMonitors() {
-  const [email, setEmail] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const { user } = useAuth(); // current admin
-
-  const handleCreateMonitor = async () => {
-    if (!email || !password || !fullName) {
-      ToastAndroid.show("Please fill all fields", ToastAndroid.BOTTOM);
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      // ✅ Use secondary auth to avoid logging out current admin
-      const secondaryAuth = getSecondaryAuth();
-      const userCredential = await createUserWithEmailAndPassword(
-        secondaryAuth,
-        email,
-        password
-      );
-      const newUser = userCredential.user;
-
-      // ✅ Save user data in Firestore with role: monitor
-      await createUserInFirestore(
-        newUser.uid,
-        fullName,
-        email,
-        null,
-        "monitor",
-        user?.uid || null
-      );
-
-      ToastAndroid.show("Monitor created successfully ✅", ToastAndroid.BOTTOM);
-
-      // ✅ Sign out from the secondary app to keep admin logged in
-      await signOut(secondaryAuth);
-
-      // Clear form
-      setEmail("");
-      setFullName("");
-      setPassword("");
-    } catch (error: any) {
-      console.error(error);
-      ToastAndroid.show("Error creating monitor", ToastAndroid.BOTTOM);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+export default function MonitorsTabs() {
   return (
-    <View style={{ padding: 20 }}>
-      <Text style={{ fontSize: 22, fontWeight: "bold", marginBottom: 20 }}>
-        Create New Monitor
-      </Text>
+    <View style={styles.container}>
+      <SafeAreaView edges={["top"]} style={styles.safeTop} />
 
-      <TextInput
-        placeholder="Full Name"
-        value={fullName}
-        onChangeText={setFullName}
-        style={{
-          borderWidth: 1,
-          borderColor: Colors.border,
-          padding: 10,
-          borderRadius: 8,
-          marginBottom: 10,
-        }}
-      />
-      <TextInput
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        style={{
-          borderWidth: 1,
-          borderColor: Colors.border,
-          padding: 10,
-          borderRadius: 8,
-          marginBottom: 10,
-        }}
-      />
-      <TextInput
-        placeholder="Password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        style={{
-          borderWidth: 1,
-          borderColor: Colors.border,
-          padding: 10,
-          borderRadius: 8,
-          marginBottom: 20,
-        }}
-      />
+      <View style={styles.tabContainer}>
+        <Tab.Navigator
+          screenOptions={{
+            tabBarStyle: styles.tabBar,
+            tabBarIndicatorStyle: styles.indicator,
+            tabBarLabelStyle: styles.tabLabel,
+          }}
+        >
+          <Tab.Screen
+            name="ContentCreated"
+            component={ContentCreatedScreen}
+            options={{ title: "Content Created" }}
+          />
 
-      <TouchableOpacity
-        onPress={handleCreateMonitor}
-        disabled={loading}
-        style={{
-          backgroundColor: Colors.primary,
-          padding: 15,
-          borderRadius: 8,
-          alignItems: "center",
-        }}
-      >
-        {loading ? (
-          <ActivityIndicator color="white" />
-        ) : (
-          <Text style={{ color: "white", fontWeight: "bold" }}>
-            Create Monitor
-          </Text>
-        )}
-      </TouchableOpacity>
+          <Tab.Screen
+            name="EditMonitors"
+            component={EditMonitorsScreen}
+            options={{ title: "Edit Monitors" }}
+          />
+        </Tab.Navigator>
+      </View>
     </View>
   );
 }
+
+/* ---------------- STYLES ---------------- */
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#FFFFFF", // important
+  },
+
+  safeTop: {
+    backgroundColor: "#FFFFFF",
+  },
+
+  tabContainer: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+
+  tabBar: {
+    backgroundColor: "#FFFFFF",
+    elevation: 0,
+    shadowOpacity: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+
+  indicator: {
+    backgroundColor: Colors.primary,
+    height: 3,
+    borderRadius: 10,
+    marginHorizontal: 40,
+  },
+
+  tabLabel: {
+    fontSize: 16,
+    fontWeight: "700",
+    textTransform: "none",
+    color: Colors.textPrimary,
+  },
+});

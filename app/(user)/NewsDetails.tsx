@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
 
   imageWrapper: {
     width: "100%",
-    height: width * 0.6,
+    height: width * 0.8,
     backgroundColor: "#ddd",
   },
   image: {
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     resizeMode: "cover",
   },
   placeholder: {
-    height: width * 0.6,
+    height: width * 0.8,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#f0f0f0",

@@ -16,16 +16,20 @@
 
 import { AuthProvider } from "@/contexts/AuthContext";
 import { Stack } from "expo-router";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import "react-native-reanimated";
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(admin)" />
-        <Stack.Screen name="(monitor)" />
-        <Stack.Screen name="(user)" />
-      </Stack>
-    </AuthProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthProvider>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="(admin)" />
+          <Stack.Screen name="(monitor)" />
+          <Stack.Screen name="(user)" />
+        </Stack>
+      </AuthProvider>
+    </GestureHandlerRootView>
   );
 }

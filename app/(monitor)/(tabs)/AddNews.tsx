@@ -2,6 +2,7 @@ import { uploadImageToCloudinary } from "@/app/api/uploadImage";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -16,6 +17,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { createNews, getNews, updateNews } from "./api/news";
 
 export default function AddNews() {
@@ -23,32 +26,39 @@ export default function AddNews() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const isEdit = !!id;
 
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingInit, setLoadingInit] = useState(isEdit);
 
-  // 🧩 Dynamic height states
+  // Dynamic heights
   const [titleHeight, setTitleHeight] = useState(48);
   const [descHeight, setDescHeight] = useState(100);
 
-  // ✅ Android Back Button → Always go to NewsList
+  // Load logged-in user safely
+  useEffect(() => {
+    const auth = getAuth();
+    const unsub = onAuthStateChanged(auth, (usr) => {
+      setCurrentUser(usr);
+    });
+    return unsub;
+  }, []);
+
+  // Android Back → go to NewsList
   useEffect(() => {
     const backAction = () => {
       router.replace("/(monitor)/(tabs)/NewsList");
       return true;
     };
 
-    const subscription = BackHandler.addEventListener(
-      "hardwareBackPress",
-      backAction
-    );
+    const sub = BackHandler.addEventListener("hardwareBackPress", backAction);
+    return () => sub.remove();
+  }, []);
 
-    return () => subscription.remove();
-  }, [router]);
-
-  // ✅ Load existing news if editing
+  // Load news if editing
   useEffect(() => {
     if (isEdit && id) {
       loadNews(id);
@@ -70,7 +80,7 @@ export default function AddNews() {
     }
   };
 
-  // ✅ Clear form when adding new
+  // Clear fields on creating new
   useFocusEffect(
     useCallback(() => {
       if (!isEdit) {
@@ -82,7 +92,7 @@ export default function AddNews() {
   );
 
   const pickImage = async () => {
-    const res = await ImagePicker.launchImageLibraryAsync({
+    const res: any = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       quality: 0.7,
@@ -91,6 +101,14 @@ export default function AddNews() {
   };
 
   const onSave = async () => {
+    if (!currentUser || !currentUser.uid) {
+      ToastAndroid.show(
+        "Session expired. Please login again.",
+        ToastAndroid.BOTTOM
+      );
+      return;
+    }
+
     if (!title || !description) {
       ToastAndroid.show("Please fill all fields", ToastAndroid.BOTTOM);
       return;
@@ -98,18 +116,23 @@ export default function AddNews() {
 
     try {
       setLoading(true);
+
       let imageUrl = imageUri;
       if (imageUri?.startsWith("file:")) {
         imageUrl = await uploadImageToCloudinary(imageUri);
       }
 
-      const payload = { title, description, imageUrl: imageUrl || null };
+      const payload = {
+        title,
+        description,
+        imageUrl: imageUrl || null,
+      };
 
       if (isEdit && id) {
         await updateNews(id, payload);
         ToastAndroid.show("News updated", ToastAndroid.BOTTOM);
       } else {
-        await createNews(payload);
+        await createNews(payload, currentUser.uid); // FIXED ✔
         ToastAndroid.show("News created", ToastAndroid.BOTTOM);
       }
 
@@ -131,16 +154,14 @@ export default function AddNews() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* 🔙 Back Button */}
+      {/* Back Button */}
       <TouchableOpacity
         style={styles.backBtn}
         onPress={() => router.replace("/(monitor)/(tabs)/NewsList")}
-        activeOpacity={0.8}
       >
         <Ionicons name="arrow-back" size={24} color="#000" />
       </TouchableOpacity>
 
-      {/* 📰 Title Header */}
       <Text style={styles.headerText}>
         {isEdit ? "✏️ Update News" : "📰 Add News"}
       </Text>
@@ -183,9 +204,7 @@ export default function AddNews() {
           ) : (
             <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
               <Ionicons name="image-outline" size={28} color="#666" />
-              <Text style={{ marginLeft: 8, color: "#666", fontSize: 15 }}>
-                Choose Image
-              </Text>
+              <Text style={{ marginLeft: 8, color: "#666" }}>Choose Image</Text>
             </TouchableOpacity>
           )}
 
@@ -205,11 +224,11 @@ export default function AddNews() {
   );
 }
 
+/* ---------- STYLES ---------- */
+
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#f6f7fb",
-  },
+  safeArea: { flex: 1, backgroundColor: "#f6f7fb" },
+
   backBtn: {
     position: "absolute",
     top: 50,
@@ -218,12 +237,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     padding: 8,
     borderRadius: 20,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
+    elevation: 5,
   },
+
   headerText: {
     fontSize: 22,
     fontWeight: "700",
@@ -232,24 +248,22 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     marginBottom: 14,
   },
+
   scrollContainer: {
     flex: 1,
     paddingHorizontal: 16,
     marginTop: 20,
   },
-  scrollContent: {
-    paddingBottom: 40,
-  },
+
+  scrollContent: { paddingBottom: 40 },
+
   card: {
     backgroundColor: "#fff",
     borderRadius: 18,
     padding: 16,
     elevation: 4,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
   },
+
   input: {
     backgroundColor: "#fff",
     padding: 12,
@@ -258,8 +272,9 @@ const styles = StyleSheet.create({
     borderColor: "#ddd",
     marginBottom: 14,
     fontSize: 15,
-    textAlignVertical: "top", // ensures multiline text aligns top
+    textAlignVertical: "top",
   },
+
   imagePicker: {
     flexDirection: "row",
     alignItems: "center",
@@ -271,28 +286,27 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     backgroundColor: "#fafafa",
   },
+
   image: {
     width: "100%",
     height: 220,
     borderRadius: 12,
     marginVertical: 12,
   },
+
   saveBtn: {
     backgroundColor: "#007AFF",
     padding: 16,
     borderRadius: 12,
     alignItems: "center",
     marginTop: 10,
-    elevation: 2,
   },
+
   saveText: {
     color: "#fff",
     fontWeight: "700",
     fontSize: 16,
   },
-  center: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+
+  center: { flex: 1, alignItems: "center", justifyContent: "center" },
 });

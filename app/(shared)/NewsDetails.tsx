@@ -15,7 +15,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { getNews } from "./api/news";
+import { getNews } from "../(monitor)/(tabs)/api/news";
 
 const { width } = Dimensions.get("window");
 
@@ -52,7 +52,7 @@ export default function NewsDetails() {
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        router.push("/(monitor)/(tabs)/NewsList");
+        router.back();
         return true;
       };
       const subscription = BackHandler.addEventListener(
@@ -142,7 +142,13 @@ export default function NewsDetails() {
           <View style={styles.metaRow}>
             <Ionicons name="calendar-outline" size={14} color="#777" />
             <Text style={styles.metaText}>
-              Published on {formatDate(news.createdAt)}
+              {news.createdAt
+                ? new Date(
+                    news.createdAt.seconds
+                      ? news.createdAt.seconds * 1000
+                      : news.createdAt
+                  ).toLocaleString()
+                : "Date not available"}
             </Text>
           </View>
 

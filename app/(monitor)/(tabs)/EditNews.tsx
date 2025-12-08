@@ -15,7 +15,7 @@ import {
   View,
 } from "react-native";
 
-const BACKEND_URL = "http://10.141.73.170:8080"; // ✅ your backend IP
+const BACKEND_URL = "http://10.149.125.170:8080"; // ✅ your backend IP
 
 export default function EditNews() {
   const router = useRouter();

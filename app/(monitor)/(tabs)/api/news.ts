@@ -14,12 +14,16 @@ import {
 
 const newsRef = collection(db, "news");
 
-export const createNews = async (data: any) => {
+export const createNews = async (data: any, uid: string) => {
+  if (!uid) throw new Error("User ID missing!");
+
   const docRef = await addDoc(newsRef, {
     ...data,
+    createdBy: uid,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
+
   return docRef.id;
 };
 

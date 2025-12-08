@@ -27,16 +27,17 @@ const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      {/* 🆕 FIX 1: Separate top bar so settings icon sits at the actual top-right of the screen */}
-      <View style={styles.topBar}>
+      {/* ⚙️ Settings Icon (Floating) */}
+      <View style={styles.iconContainer}>
         <TouchableOpacity
           onPress={() => setShowLangMenu(!showLangMenu)}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} // invisible touch padding
           style={styles.settingsButton}
         >
-          <Ionicons name="settings-outline" size={26} color={Colors.primary} />
+          <Ionicons name="settings-outline" size={26} color={Colors.homeIcon} />
         </TouchableOpacity>
 
-        {/* 🗣️ Dropdown menu appears below the settings icon */}
+        {/* 🌐 Language Menu */}
         {showLangMenu && (
           <Animated.View style={styles.langMenu}>
             <TouchableOpacity
@@ -74,60 +75,55 @@ const Header: React.FC<HeaderProps> = ({
   );
 };
 
+export default Header;
+
 const styles = StyleSheet.create({
-  // 🆕 FIX 2: Added a top bar to hold settings icon — separate from profile section
-  topBar: {
-    width: "100%",
-    alignItems: "flex-end", // aligns icon to the right edge of the screen
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    position: "relative",
-  },
-
-  // 🆕 FIX 3: Style for settings button — ensures good touch area and spacing
-  settingsButton: {
-    padding: 6,
-  },
-
-  // 🧑 Profile section (centered)
-  container: {
-    alignItems: "center",
-    marginVertical: 10,
-  },
-
-  image: {
-    width: 130,
-    height: 130,
-    borderRadius: 100,
-    borderWidth: 2.5,
-    borderColor: Colors.primary,
-    marginTop: 10,
-  },
-  name: {
-    marginTop: 10,
-    fontSize: 20,
-    fontWeight: "bold",
-    color: Colors.text,
-  },
-  title: {
-    fontSize: 16,
-    color: Colors.secondary,
-  },
-
-  // 🗣️ Language dropdown menu styles
-  langMenu: {
-    marginTop: 10,
+  /**
+   * 🧭 Settings icon container
+   * - Absolute positioning lets you move it anywhere on the screen
+   */
+  iconContainer: {
     position: "absolute",
-    top: 40, // distance below the icon
-    right: 20,
-    backgroundColor: "#fff",
+    top: 20, // 🔧 adjust vertical position (distance from top)
+    right: 10, // 🔧 adjust horizontal position (distance from right)
+    zIndex: 20, // ensures it stays above everything
+  },
+
+  /**
+   * ⚙️ Settings button styling
+   */
+  settingsButton: {
+    // backgroundColor: Colors.card,
+    borderRadius: 50,
+    paddingRight: 10,
+    paddingTop: 25,
+    marginLeft: 50,
+    // adjust visible padding
+    // shadowColor: Colors.shadow,
+    // shadowOffset: { width: 0, height: 2 },
+    // shadowOpacity: 0.15,
+    // shadowRadius: 6,
+    // elevation: 3,
+  },
+
+  /**
+   * 🌐 Language menu dropdown
+   */
+  langMenu: {
+    position: "absolute",
+    top: 60, // distance below settings icon
+    right: 0,
+    backgroundColor: Colors.card,
     borderRadius: 10,
     elevation: 5,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    // padding: 20,
+    paddingVertical: 5,
+    paddingHorizontal: 5,
+    shadowColor: Colors.shadow,
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   langText: {
     fontSize: 16,
@@ -135,6 +131,31 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontWeight: "500",
   },
-});
 
-export default Header;
+  /**
+   * 🧑 Profile Section
+   */
+  container: {
+    alignItems: "center",
+    marginTop: 50, // give space for the floating icon
+    marginBottom: 10,
+  },
+  image: {
+    width: 150,
+    height: 150,
+    borderRadius: 100,
+    borderWidth: 2.5,
+    borderColor: Colors.homeProfileBorder,
+    marginTop: 10,
+  },
+  name: {
+    marginTop: 10,
+    fontSize: 25,
+    fontWeight: "bold",
+    color: Colors.textWhite,
+  },
+  title: {
+    fontSize: 16,
+    color: Colors.textWhite,
+  },
+});
