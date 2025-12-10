@@ -80,6 +80,9 @@ export default function MonitorTabs() {
           }}
         />
 
+        <Tabs.Screen name="ManageVideos" options={{ title: "Videos" }} />
+        <Tabs.Screen name="AddVideo" options={{ title: "Add Video" }} />
+
         {/* Hidden screens */}
         <Tabs.Screen name="ComplaintDetails" options={{ href: null }} />
         {/* HIDDEN SCREENS */}

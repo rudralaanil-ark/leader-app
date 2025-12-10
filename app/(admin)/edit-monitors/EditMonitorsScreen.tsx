@@ -26,7 +26,7 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const BACKEND_URL = "http://10.149.125.170:8080"; // change this to your backend IP
+const BACKEND_URL = "http://10.54.130.170:8080"; // change this to your backend IP
 
 export default function EditMonitorsScreen() {
   const [monitors, setMonitors] = useState<any[]>([]);

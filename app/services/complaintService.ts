@@ -420,6 +420,205 @@
 //   },
 // };
 
+// import { db } from "@/configs/FirebaseConfig";
+// import {
+//   addDoc,
+//   collection,
+//   doc,
+//   getDoc,
+//   onSnapshot,
+//   orderBy,
+//   query,
+//   serverTimestamp,
+//   updateDoc,
+//   where,
+// } from "firebase/firestore";
+
+// export type ComplaintStatus =
+//   | "pending"
+//   | "accepted"
+//   | "in_progress"
+//   | "need_info"
+//   | "resolved";
+
+// export type ComplaintMedia = {
+//   type: "image" | "video";
+//   url: string;
+// };
+
+// export type ComplaintReply = {
+//   id: string;
+//   message: string;
+//   repliedBy: string;
+//   repliedByName: string;
+//   role: "admin" | "monitor" | "user";
+//   createdAt: any;
+// };
+
+// export type Complaint = {
+//   userId: string;
+//   userName: string;
+//   phone: string;
+//   place: string;
+
+//   title: string;
+//   description: string;
+
+//   media: ComplaintMedia[];
+
+//   status: ComplaintStatus;
+
+//   isReadByAdmin: boolean;
+//   isReadByUser: boolean;
+//   archived: boolean;
+
+//   replies: ComplaintReply[];
+
+//   createdAt?: any;
+//   updatedAt?: any;
+// };
+
+// export type ComplaintDoc = Complaint & { id: string };
+
+// const COMPLAINTS = "complaints";
+
+// // Ensure media format always valid
+// function normalizeMedia(media: any[]): ComplaintMedia[] {
+//   if (!Array.isArray(media)) return [];
+//   return media.map((m) => ({
+//     type: m.type === "video" ? "video" : "image",
+//     url: m.url,
+//   }));
+// }
+
+// export const complaintService = {
+//   /** CREATE complaint */
+//   async createComplaint(data: {
+//     userId: string;
+//     userName: string;
+//     phone: string;
+//     place: string;
+//     title: string;
+//     description: string;
+//     media: ComplaintMedia[];
+//   }) {
+//     const ref = await addDoc(collection(db, COMPLAINTS), {
+//       ...data,
+//       status: "pending",
+//       isReadByAdmin: false,
+//       isReadByUser: true,
+//       archived: false,
+//       replies: [],
+//       createdAt: serverTimestamp(),
+//       updatedAt: serverTimestamp(),
+//     });
+//     return ref.id;
+//   },
+
+//   /** USER complaint subscription */
+//   subscribeToUserComplaints(uid: string, cb: (list: ComplaintDoc[]) => void) {
+//     const q = query(
+//       collection(db, COMPLAINTS),
+//       where("userId", "==", uid),
+//       where("archived", "==", false),
+//       orderBy("createdAt", "desc")
+//     );
+//     return onSnapshot(q, (snap) =>
+//       cb(
+//         snap.docs.map((d) => {
+//           const doc = d.data() as Complaint;
+//           return { id: d.id, ...doc, media: normalizeMedia(doc.media) };
+//         })
+//       )
+//     );
+//   },
+
+//   /** ADMIN/MONITOR list */
+//   subscribeToAllComplaints(cb: (list: ComplaintDoc[]) => void) {
+//     const q = query(
+//       collection(db, COMPLAINTS),
+//       where("archived", "==", false),
+//       orderBy("createdAt", "desc")
+//     );
+//     return onSnapshot(q, (snap) =>
+//       cb(
+//         snap.docs.map((d) => {
+//           const doc = d.data() as Complaint;
+//           return { id: d.id, ...doc, media: normalizeMedia(doc.media) };
+//         })
+//       )
+//     );
+//   },
+
+//   /** Single complaint */
+//   subscribeToComplaint(
+//     id: string,
+//     cb: (complaint: ComplaintDoc | null) => void
+//   ) {
+//     return onSnapshot(doc(db, COMPLAINTS, id), (snap) => {
+//       if (!snap.exists()) return cb(null);
+//       const docData = snap.data() as Complaint;
+//       cb({
+//         id: snap.id,
+//         ...docData,
+//         media: normalizeMedia(docData.media),
+//       });
+//     });
+//   },
+
+//   /** Update status */
+//   async updateStatus(id: string, status: ComplaintStatus) {
+//     await updateDoc(doc(db, COMPLAINTS, id), {
+//       status,
+//       updatedAt: serverTimestamp(),
+//       isReadByUser: false,
+//     });
+//   },
+
+//   /** Mark view state */
+//   async markReadByAdmin(id: string) {
+//     await updateDoc(doc(db, COMPLAINTS, id), {
+//       isReadByAdmin: true,
+//     });
+//   },
+
+//   async markReadByUser(id: string) {
+//     await updateDoc(doc(db, COMPLAINTS, id), {
+//       isReadByUser: true,
+//     });
+//   },
+
+//   /** Replies */
+//   async addReply(id: string, reply: Omit<ComplaintReply, "id">) {
+//     const ref = doc(db, COMPLAINTS, id);
+//     const snap = await getDoc(ref);
+//     if (!snap.exists()) return;
+
+//     const data = snap.data() as Complaint;
+//     const replies = Array.isArray(data.replies) ? data.replies : [];
+
+//     const newReply: ComplaintReply = {
+//       id: Date.now().toString(),
+//       ...reply,
+//     };
+
+//     await updateDoc(ref, {
+//       replies: [...replies, newReply],
+//       updatedAt: serverTimestamp(),
+//       isReadByAdmin: false,
+//       isReadByUser: false,
+//     });
+//   },
+
+//   /** Archive */
+//   async archiveComplaint(id: string) {
+//     await updateDoc(doc(db, COMPLAINTS, id), {
+//       archived: true,
+//       updatedAt: serverTimestamp(),
+//     });
+//   },
+// };
+
 import { db } from "@/configs/FirebaseConfig";
 import {
   addDoc,
@@ -482,17 +681,17 @@ export type ComplaintDoc = Complaint & { id: string };
 
 const COMPLAINTS = "complaints";
 
-// Ensure media format always valid
 function normalizeMedia(media: any[]): ComplaintMedia[] {
   if (!Array.isArray(media)) return [];
-  return media.map((m) => ({
-    type: m.type === "video" ? "video" : "image",
-    url: m.url,
-  }));
+  return media
+    .filter((m) => m && typeof m.url === "string" && m.url.trim().length > 0)
+    .map((m) => ({
+      type: m.type === "video" ? "video" : "image",
+      url: m.url,
+    }));
 }
 
 export const complaintService = {
-  /** CREATE complaint */
   async createComplaint(data: {
     userId: string;
     userName: string;
@@ -515,7 +714,6 @@ export const complaintService = {
     return ref.id;
   },
 
-  /** USER complaint subscription */
   subscribeToUserComplaints(uid: string, cb: (list: ComplaintDoc[]) => void) {
     const q = query(
       collection(db, COMPLAINTS),
@@ -533,7 +731,6 @@ export const complaintService = {
     );
   },
 
-  /** ADMIN/MONITOR list */
   subscribeToAllComplaints(cb: (list: ComplaintDoc[]) => void) {
     const q = query(
       collection(db, COMPLAINTS),
@@ -550,23 +747,23 @@ export const complaintService = {
     );
   },
 
-  /** Single complaint */
   subscribeToComplaint(
     id: string,
     cb: (complaint: ComplaintDoc | null) => void
   ) {
     return onSnapshot(doc(db, COMPLAINTS, id), (snap) => {
       if (!snap.exists()) return cb(null);
-      const docData = snap.data() as Complaint;
+
+      const data = snap.data() as Complaint;
+
       cb({
         id: snap.id,
-        ...docData,
-        media: normalizeMedia(docData.media),
+        ...data,
+        media: normalizeMedia(data.media),
       });
     });
   },
 
-  /** Update status */
   async updateStatus(id: string, status: ComplaintStatus) {
     await updateDoc(doc(db, COMPLAINTS, id), {
       status,
@@ -575,7 +772,6 @@ export const complaintService = {
     });
   },
 
-  /** Mark view state */
   async markReadByAdmin(id: string) {
     await updateDoc(doc(db, COMPLAINTS, id), {
       isReadByAdmin: true,
@@ -602,15 +798,17 @@ export const complaintService = {
       ...reply,
     };
 
+    // Role condition logic
+    const isUser = reply.role === "user";
+
     await updateDoc(ref, {
       replies: [...replies, newReply],
       updatedAt: serverTimestamp(),
-      isReadByAdmin: false,
-      isReadByUser: false,
+      isReadByAdmin: isUser ? false : true, // unread for admin if user messages
+      isReadByUser: isUser ? true : false, // unread for user if admin/monitor messages
     });
   },
 
-  /** Archive */
   async archiveComplaint(id: string) {
     await updateDoc(doc(db, COMPLAINTS, id), {
       archived: true,

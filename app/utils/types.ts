@@ -61,13 +61,16 @@
 //   updatedAt: Timestamp;
 // }
 
+//app\utils\types.ts
+
 import { Timestamp } from "firebase/firestore";
 
 export interface PostMedia {
   url: string;
   publicId: string;
   order: number;
-  type: "image";
+  type: "image" | "video";
+  thumbnailUrl?: string | null;
 }
 
 export interface Post {
@@ -77,7 +80,7 @@ export interface Post {
   ownerName: string;
   ownerRole: "admin" | "monitor" | "user";
 
-  type: "post" | "event" | "news";
+  type: "post" | "event" | "news" | "video";
   title?: string | null;
 
   description?: string;

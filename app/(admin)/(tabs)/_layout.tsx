@@ -100,6 +100,10 @@ export default function AdminTabs() {
           ),
         }}
       />
+
+      <Tabs.Screen name="ManageVideos" options={{ title: "Videos" }} />
+      <Tabs.Screen name="AddVideo" options={{ title: "Add Video" }} />
+
       <Tabs.Screen
         name="AddMonitor"
         options={{

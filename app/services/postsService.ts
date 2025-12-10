@@ -372,11 +372,13 @@ import {
   getDoc,
   getDocs,
   increment,
+  onSnapshot,
   orderBy,
   query,
   runTransaction,
   serverTimestamp,
   updateDoc,
+  where,
 } from "firebase/firestore";
 
 import { db } from "@/configs/FirebaseConfig";
@@ -505,5 +507,12 @@ export const postsService = {
     const likeRef = doc(db, POSTS, postId, "likes", userId);
     const snap = await getDoc(likeRef);
     return snap.exists();
+  },
+
+  subscribeToPostType(type: Post["type"], cb: (list: Post[]) => void) {
+    const q = query(collection(db, POSTS), where("type", "==", type));
+    return onSnapshot(q, (snap) => {
+      cb(snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) } as Post)));
+    });
   },
 };
