@@ -246,6 +246,7 @@
 //   },
 // });
 
+// app/(admin)/(tabs)/Complaints.tsx
 import ComplaintsList from "@/app/(shared)/complaints/ComplaintsList";
 import React from "react";
 

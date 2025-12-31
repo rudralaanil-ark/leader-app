@@ -1,3 +1,4 @@
+// app/(user)/(tabs)/News.tsx
 import { listenToNews } from "@/app/(monitor)/(tabs)/api/news";
 import GlossyBackground from "@/componenets/Shared/GlossyBackground";
 import Colors from "@/data/Colors";

@@ -770,13 +770,11 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import Colors from "@/data/Colors";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   ImageBackground,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -802,8 +800,6 @@ export default function ComplaintDetailsUser() {
   const [showImageViewer, setShowImageViewer] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  const scrollViewRef = useRef<ScrollView>(null);
-
   const safeDate = (d: any): Date =>
     d?.toDate?.() ?? (d instanceof Date ? d : new Date());
 
@@ -828,20 +824,10 @@ export default function ComplaintDetailsUser() {
     if (!complaint?.replies) return [];
     const getTS = (ts: any) =>
       ts?.toDate?.()?.getTime?.() ?? (ts instanceof Date ? ts.getTime() : 0);
-
     return [...complaint.replies].sort(
       (a, b) => getTS(a.createdAt) - getTS(b.createdAt)
     );
   }, [complaint?.replies]);
-
-  useEffect(() => {
-    if (repliesSorted.length > 0) {
-      setTimeout(
-        () => scrollViewRef.current?.scrollToEnd({ animated: true }),
-        100
-      );
-    }
-  }, [repliesSorted.length]);
 
   const openImage = (url: string) => {
     setSelectedImage(url);
@@ -861,10 +847,6 @@ export default function ComplaintDetailsUser() {
         createdAt: new Date(),
       });
       setReplyText("");
-      setTimeout(
-        () => scrollViewRef.current?.scrollToEnd({ animated: true }),
-        150
-      );
     } catch (e) {
       console.error("User reply error:", e);
     } finally {
@@ -882,124 +864,121 @@ export default function ComplaintDetailsUser() {
 
   return (
     <>
-      <SafeAreaView style={styles.safeArea}>
-        <KeyboardAvoidingView
-          style={styles.keyboardAvoiding}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+      <SafeAreaView style={styles.container}>
+        {/* ===========================
+                COMPLAINT DETAILS
+        ============================ */}
+        <ScrollView
+          style={styles.detailsScroll}
+          contentContainerStyle={styles.detailsContainer}
+          showsVerticalScrollIndicator={false}
         >
-          <View style={styles.container}>
-            {/* ===== Complaint Detail Card ===== */}
-            <View style={styles.detailsCard}>
-              <Text style={styles.title}>{complaint.title}</Text>
-              <Text style={styles.meta}>
-                Created: {created.toLocaleString()}
-              </Text>
+          <Text style={styles.title}>{complaint.title}</Text>
+          <Text style={styles.meta}>Created: {created.toLocaleString()}</Text>
 
-              <StatusBadge status={complaint.status} viewerRole="user" />
-
-              <Text style={styles.sectionSmallLabel}>Description</Text>
-              <Text style={styles.description}>{complaint.description}</Text>
-
-              {complaint.phone ? (
-                <>
-                  <Text style={styles.sectionSmallLabel}>Phone</Text>
-                  <Text style={styles.infoText}>{complaint.phone}</Text>
-                </>
-              ) : null}
-
-              {complaint.place ? (
-                <>
-                  <Text style={styles.sectionSmallLabel}>Place</Text>
-                  <Text style={styles.infoText}>{complaint.place}</Text>
-                </>
-              ) : null}
-
-              {complaint.media?.length > 0 && (
-                <>
-                  <Text style={styles.sectionSmallLabel}>Attachments</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    {complaint.media.map((m, i) => (
-                      <Pressable key={i} onPress={() => openImage(m.url)}>
-                        <ImageBackground
-                          source={{ uri: m.url }}
-                          style={styles.mediaThumb}
-                          imageStyle={{ borderRadius: 10 }}
-                        />
-                      </Pressable>
-                    ))}
-                  </ScrollView>
-                </>
-              )}
-            </View>
-            <Pressable style={styles.backBtn} onPress={() => router.back()}>
-              <Text style={styles.backBtnText}>Back</Text>
-            </Pressable>
-            {/* Chat Section Title */}
-            <Text style={styles.chatTitle}>Conversation</Text>
-
-            {/* ===== Chat Area ===== */}
-            <ScrollView
-              ref={scrollViewRef}
-              style={styles.chatArea}
-              contentContainerStyle={{ paddingBottom: 80 }}
-              keyboardShouldPersistTaps="handled"
-            >
-              {repliesSorted.map((r) => (
-                <MessageBubble
-                  key={r.id}
-                  text={r.message}
-                  isMe={r.repliedBy === user?.uid}
-                  label={
-                    r.role === "admin"
-                      ? "Admin"
-                      : r.role === "monitor"
-                      ? "Monitor"
-                      : "You"
-                  }
-                  timestamp={safeDate(r.createdAt)}
-                />
-              ))}
-            </ScrollView>
-
-            {/* ===== Reply Bar / Status Notice ===== */}
-            {complaint.status === "resolved" ? (
-              <View style={styles.disabledBar}>
-                <Text style={styles.disabledText}>
-                  This complaint has been resolved. Chat is closed.
-                </Text>
-              </View>
-            ) : (
-              <View style={styles.replyBar}>
-                <TextInput
-                  style={styles.replyInput}
-                  placeholder="Type your reply..."
-                  placeholderTextColor={Colors.textMuted}
-                  value={replyText}
-                  onChangeText={setReplyText}
-                  multiline
-                />
-                <Pressable
-                  style={[
-                    styles.replyButton,
-                    (!replyText.trim() || sending) && { opacity: 0.6 },
-                  ]}
-                  onPress={handleSendReply}
-                  disabled={!replyText.trim() || sending}
-                >
-                  {sending ? (
-                    <ActivityIndicator color={Colors.textInverse} />
-                  ) : (
-                    <Text style={styles.replyButtonText}>Send</Text>
-                  )}
-                </Pressable>
-              </View>
-            )}
+          <View style={{ marginTop: 8 }}>
+            <StatusBadge status={complaint.status} viewerRole="user" />
           </View>
-        </KeyboardAvoidingView>
+
+          <View style={styles.sectionBox}>
+            <Text style={styles.sectionLabel}>Description</Text>
+            <Text style={styles.descriptionText}>{complaint.description}</Text>
+          </View>
+
+          {complaint.media?.length > 0 && (
+            <View style={styles.sectionBox}>
+              <Text style={styles.sectionLabel}>Attachments</Text>
+              <View style={styles.attachmentGrid}>
+                {complaint.media.map((m, i) => (
+                  <Pressable key={i} onPress={() => openImage(m.url)}>
+                    <ImageBackground
+                      source={{ uri: m.url }}
+                      style={styles.mediaThumb}
+                      imageStyle={{ borderRadius: 10 }}
+                    />
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          )}
+
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => router.back()}
+          >
+            <Text style={styles.backBtnText}>Back</Text>
+          </TouchableOpacity>
+        </ScrollView>
+
+        {/* ===========================
+                  CHAT SECTION
+        ============================ */}
+        <View style={styles.chatContainer}>
+          <Text style={styles.chatHeader}>Conversation</Text>
+
+          <ScrollView
+            style={styles.chatScroll}
+            contentContainerStyle={{ paddingBottom: 20 }}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Original complaint */}
+            <MessageBubble
+              text={complaint.description}
+              label="You"
+              isMe={true}
+              timestamp={created}
+            />
+
+            {/* Replies */}
+            {repliesSorted.map((r) => (
+              <MessageBubble
+                key={r.id}
+                text={r.message}
+                isMe={r.repliedBy === user?.uid}
+                label={
+                  r.role === "admin"
+                    ? "Admin"
+                    : r.role === "monitor"
+                    ? "Monitor"
+                    : "You"
+                }
+                timestamp={safeDate(r.createdAt)}
+              />
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* REPLY BAR */}
+        <View style={styles.replyBar}>
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={styles.replyInput}
+              placeholder="Write a message..."
+              placeholderTextColor={Colors.textMuted}
+              value={replyText}
+              onChangeText={setReplyText}
+              multiline
+            />
+          </View>
+
+          <Pressable
+            style={[
+              styles.replyButton,
+              (!replyText.trim() || sending) && { opacity: 0.5 },
+            ]}
+            onPress={handleSendReply}
+            disabled={!replyText.trim() || sending}
+          >
+            {sending ? (
+              <ActivityIndicator color={Colors.textInverse} />
+            ) : (
+              <Text style={styles.replyButtonText}>Send</Text>
+            )}
+          </Pressable>
+        </View>
       </SafeAreaView>
 
-      {/* Image Popup */}
+      {/* FULL IMAGE VIEWER */}
       <Modal visible={showImageViewer} transparent animationType="fade">
         <TouchableOpacity
           activeOpacity={1}
@@ -1021,143 +1000,162 @@ export default function ComplaintDetailsUser() {
   );
 }
 
-/* ---------------- Styles ---------------- */
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: Colors.background },
-  keyboardAvoiding: { flex: 1 },
-  container: { flex: 1, padding: 12, backgroundColor: Colors.background },
-
-  center: {
+  container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
     backgroundColor: Colors.background,
   },
 
-  /* Complaint Card */
-  detailsCard: {
+  /* =======================
+        DETAILS SECTION
+  ======================== */
+  detailsScroll: {
+    flex: 1.3,
     backgroundColor: Colors.card,
-    padding: 14,
+  },
+  detailsContainer: {
+    padding: 16,
+    paddingBottom: 30,
+  },
+
+  title: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: Colors.textPrimary,
+  },
+  meta: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    marginTop: 4,
+  },
+
+  sectionBox: {
+    marginTop: 16,
+    backgroundColor: Colors.surface,
+    padding: 12,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.border,
-    marginBottom: 12,
   },
-
-  title: { fontSize: 20, fontWeight: "700", color: Colors.textPrimary },
-  meta: { fontSize: 12, color: Colors.textMuted, marginBottom: 10 },
-
-  description: { fontSize: 14, color: Colors.textPrimary, marginBottom: 10 },
-  sectionSmallLabel: {
-    fontSize: 13,
+  sectionLabel: {
+    fontSize: 14,
     fontWeight: "700",
-    marginTop: 10,
-    marginBottom: 2,
+    color: Colors.textPrimary,
+    marginBottom: 6,
+  },
+  descriptionText: {
+    fontSize: 14,
     color: Colors.textSecondary,
+    lineHeight: 20,
   },
-  infoText: { fontSize: 13, color: Colors.textPrimary },
 
+  attachmentGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
   mediaThumb: {
-    width: 80,
-    height: 80,
-    marginRight: 8,
-    backgroundColor: Colors.surfaceDark,
+    width: 90,
+    height: 90,
     borderRadius: 10,
+    backgroundColor: Colors.surfaceDark,
   },
-
-  /* Chat Header */
-  chatTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: Colors.primary,
-    marginVertical: 6,
-    paddingHorizontal: 4,
-  },
-
-  /* Chat Area */
-  chatArea: { flex: 1, marginBottom: 0 },
 
   backBtn: {
-    alignSelf: "flex-end",
+    marginTop: 25,
     backgroundColor: Colors.primary,
-    paddingHorizontal: 14,
-    marginRight: 10,
-    paddingVertical: 8,
-    borderRadius: 8,
-    // marginTop: 5,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: "center",
   },
-  backBtnText: { color: Colors.textWhite, fontWeight: "600" },
+  backBtnText: {
+    color: Colors.textInverse,
+    fontWeight: "700",
+  },
 
-  /* Reply Bar */
+  /* =======================
+          CHAT SECTION
+  ======================== */
+  chatContainer: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    borderTopWidth: 1,
+    borderColor: Colors.border,
+  },
+  chatHeader: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: Colors.textPrimary,
+    padding: 12,
+    backgroundColor: Colors.card,
+    borderBottomWidth: 1,
+    borderColor: Colors.border,
+  },
+  chatScroll: {
+    flex: 1,
+    paddingHorizontal: 12,
+  },
+
+  /* =======================
+          REPLY BAR
+  ======================== */
   replyBar: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
     flexDirection: "row",
-    paddingVertical: 6,
-    paddingHorizontal: 8,
+    padding: 10,
     backgroundColor: Colors.card,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
   },
-
-  disabledBar: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingVertical: 10,
-    alignItems: "center",
-    backgroundColor: Colors.surfaceDark,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-  },
-  disabledText: {
-    color: Colors.textPrimary,
-    fontSize: 13,
-    fontWeight: "600",
-  },
-
-  replyInput: {
+  inputWrapper: {
     flex: 1,
     backgroundColor: Colors.surface,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    maxHeight: 100,
-    color: Colors.textPrimary,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderWidth: 1,
     borderColor: Colors.border,
   },
-
+  replyInput: {
+    fontSize: 14,
+    maxHeight: 120,
+    color: Colors.textPrimary,
+  },
   replyButton: {
-    marginLeft: 6,
+    marginLeft: 10,
     backgroundColor: Colors.primary,
-    borderRadius: 10,
-    paddingHorizontal: 14,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     justifyContent: "center",
   },
   replyButtonText: {
     color: Colors.textInverse,
-    fontSize: 13,
     fontWeight: "700",
   },
 
-  /* Modal */
+  /* MODAL IMAGE */
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.6)",
+    backgroundColor: "rgba(0,0,0,0.7)",
     justifyContent: "center",
     alignItems: "center",
   },
-
   popupCard: {
-    width: "80%",
-    height: "60%",
+    width: "85%",
+    height: "70%",
     backgroundColor: Colors.card,
-    borderRadius: 16,
+    borderRadius: 18,
     overflow: "hidden",
   },
-  popupImage: { width: "100%", height: "100%" },
+  popupImage: {
+    width: "100%",
+    height: "100%",
+  },
+
+  /* LOADING */
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 });

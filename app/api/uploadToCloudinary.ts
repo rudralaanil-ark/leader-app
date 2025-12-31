@@ -1,7 +1,11 @@
 import { CLOUDINARY } from "@/configs/CloudinaryConfig";
 
-export const uploadVideoToCloudinary = async (uri: string): Promise<string> => {
+export const uploadVideoToCloudinary = async (
+  uri: string,
+  trim?: { start: number; end: number }
+): Promise<{ videoUrl: string; thumbnailUrl: string }> => {
   const form = new FormData();
+
   form.append("file", {
     uri,
     type: "video/mp4",
@@ -16,5 +20,20 @@ export const uploadVideoToCloudinary = async (uri: string): Promise<string> => {
   );
 
   const json = await res.json();
-  return json.secure_url;
+
+  let videoUrl = json.secure_url;
+
+  // ✅ Cloudinary trimming (optional)
+  if (trim) {
+    videoUrl = videoUrl.replace(
+      "/upload/",
+      `/upload/so_${trim.start},eo_${trim.end}/`
+    );
+  }
+
+  const thumbnailUrl = videoUrl
+    .replace("/upload/", "/upload/so_1/")
+    .replace(".mp4", ".jpg");
+
+  return { videoUrl, thumbnailUrl };
 };

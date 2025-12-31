@@ -11,8 +11,16 @@ import {
   signInWithEmailAndPassword,
   signOut,
 } from "firebase/auth";
+import { Timestamp } from "firebase/firestore";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { ToastAndroid } from "react-native";
+
+//these imports for notifications
+import { registerForPushNotifications } from "@/app/utils/notifications";
+import * as Notifications from "expo-notifications";
+
+import messaging from "@react-native-firebase/messaging";
+import { initFCM } from "@/app/utils/fcm";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -59,6 +67,60 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // // this useEffect is for handling notification clicks
+  // useEffect(() => {
+  //   const subscription = Notifications.addNotificationResponseReceivedListener(
+  //     (response) => {
+  //       const data = response.notification.request.content.data as any;
+
+  //       if (data?.type === "news" && data?.id) {
+  //         router.push({
+  //           pathname: "/(user)/NewsDetails",
+  //           params: { id: data.id },
+  //         });
+  //       }
+  //     }
+  //   );
+
+  //   return () => subscription.remove();
+  // }, []);
+
+  // this useEffect is for handling when app is opened from background or quit state
+  useEffect(() => {
+    // App opened from quit state
+    messaging()
+      .getInitialNotification()
+      .then((remoteMessage) => {
+        if (remoteMessage?.data?.type === "news") {
+          router.push({
+            pathname: "/(user)/NewsDetails",
+            params: { id: remoteMessage.data.id },
+          });
+        }
+      });
+
+    // App opened from background
+    const unsubscribe = messaging().onNotificationOpenedApp((remoteMessage) => {
+      if (remoteMessage?.data?.type === "news") {
+        router.push({
+          pathname: "/(user)/NewsDetails",
+          params: { id: remoteMessage.data.id },
+        });
+      }
+    });
+
+    return unsubscribe;
+  }, []);
+
+  // this useEffect is for handling foreground messages
+  useEffect(() => {
+    const unsubscribe = messaging().onMessage(async (remoteMessage) => {
+      console.log("🔔 Foreground FCM:", remoteMessage);
+    });
+
+    return unsubscribe;
+  }, []);
+
   useEffect(() => {
     let unsubscribe: any;
     const initAuth = async () => {
@@ -70,6 +132,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           if (userData) {
             setUser(userData);
             await AsyncStorage.setItem("userData", JSON.stringify(userData));
+
+            // 🔔 Register push notifications
+            // registerForPushNotifications().then((token) => {
+            //   if (token) {
+            //     console.log("🔔 Push notifications enabled");
+            //   }
+            // });
+            initFCM();
 
             if (router && !router.canGoBack()) {
               if (userData.role === "admin")

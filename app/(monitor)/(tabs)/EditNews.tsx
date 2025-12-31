@@ -1,3 +1,4 @@
+// app/(monitor)/(tabs)/EditNews.tsx
 import uploadImageToCloudinary from "@/app/api/uploadImage";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
@@ -15,7 +16,7 @@ import {
   View,
 } from "react-native";
 
-const BACKEND_URL = "http://10.54.130.170:8080"; // ✅ your backend IP
+const BACKEND_URL = "https://leader-app-backend-production.up.railway.app"; // ✅ your backend IP
 
 export default function EditNews() {
   const router = useRouter();

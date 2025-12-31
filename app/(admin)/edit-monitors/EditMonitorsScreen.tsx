@@ -26,7 +26,7 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const BACKEND_URL = "http://10.54.130.170:8080"; // change this to your backend IP
+const BACKEND_URL = "https://leader-app-backend-production.up.railway.app"; // change this to your backend IP
 
 export default function EditMonitorsScreen() {
   const [monitors, setMonitors] = useState<any[]>([]);
@@ -274,7 +274,7 @@ export default function EditMonitorsScreen() {
         {/* Floating Add Button */}
         <TouchableOpacity
           style={styles.fab}
-          onPress={() => router.push("/(admin)/(tabs)/ManageMonitors")}
+          onPress={() => router.push("/(admin)/(tabs)/AddMonitor")}
         >
           <Ionicons name="add" size={32} color={Colors.textInverse} />
         </TouchableOpacity>

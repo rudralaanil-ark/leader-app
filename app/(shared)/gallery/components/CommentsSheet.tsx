@@ -390,16 +390,768 @@
 // app/components/gallery/CommentsSheet.tsx
 // SAFEST CommentsSheet Version — No merge logic, No iterator crash
 // CommentsSheet.tsx — ANDROID SAFE VERSION
+
+// // app/components/gallery/CommentsSheet.tsx
+// import { auth } from "@/configs/FirebaseConfig";
+// import Colors from "@/data/Colors";
+// import { formatDistanceToNow } from "date-fns";
+// import React, { useEffect, useRef, useState } from "react";
+// import {
+//   FlatList,
+//   Image,
+//   Keyboard,
+//   KeyboardAvoidingView,
+//   Modal,
+//   Platform,
+//   SafeAreaView,
+//   StyleSheet,
+//   Text,
+//   TextInput,
+//   TouchableOpacity,
+//   View,
+// } from "react-native";
+// import { commentsService } from "../../../services/commentsService";
+
+// interface CommentItemType {
+//   id: string;
+//   userId: string;
+//   userName: string;
+//   role?: string;
+//   profileImage?: string | null;
+//   text: string;
+//   parentId?: string | null;
+//   createdAt?: any;
+//   __source?: string;
+// }
+
+// export default function CommentsSheet({
+//   visible,
+//   onClose,
+//   postId,
+// }: {
+//   visible: boolean;
+//   onClose: () => void;
+//   postId: string;
+// }) {
+//   const [text, setText] = useState("");
+//   const [replyTo, setReplyTo] = useState<CommentItemType | null>(null);
+//   const [comments, setComments] = useState<CommentItemType[]>([]);
+//   const listRef = useRef<FlatList<CommentItemType> | null>(null);
+//   const inputRef = useRef<TextInput | null>(null);
+
+//   const user = auth.currentUser;
+
+//   // Load once (existing comments) then subscribe
+//   useEffect(() => {
+//     if (!visible) return;
+
+//     let mounted = true;
+
+//     (async () => {
+//       try {
+//         // 1) one-time load from nested location (safe)
+//         let once: CommentItemType[] = [];
+//         if (typeof commentsService.getCommentsOnce === "function") {
+//           once = (await commentsService.getCommentsOnce(postId)) || [];
+//         }
+//         if (!mounted) return;
+//         setComments(Array.isArray(once) ? once : []);
+
+//         // scroll to bottom after brief delay
+//         setTimeout(() => {
+//           listRef.current?.scrollToEnd?.({ animated: false });
+//         }, 120);
+
+//         // 2) subscribe merges nested+legacy internally (see service)
+//         const unsub = commentsService.subscribeToComments(
+//           postId,
+//           (arr: any[]) => {
+//             if (!mounted) return;
+//             setComments(Array.isArray(arr) ? arr : []);
+//             // ensure we keep the list scrolled to bottom if user near bottom
+//             setTimeout(() => {
+//               listRef.current?.scrollToEnd?.({ animated: true });
+//             }, 120);
+//           }
+//         );
+
+//         return () => {
+//           mounted = false;
+//           if (unsub) unsub();
+//         };
+//       } catch (e) {
+//         console.warn("CommentsSheet.load error", e);
+//       }
+//     })();
+//   }, [visible, postId]);
+
+//   // Send comment
+//   const send = async () => {
+//     if (!text.trim() || !user) return;
+//     try {
+//       await commentsService.addComment({
+//         postId,
+//         userId: user.uid,
+//         name: user.displayName ?? "User",
+//         role: "user",
+//         profileImage: (user as any)?.photoURL ?? null,
+//         text: text.trim(),
+//         parentId: replyTo ? replyTo.id : null,
+//       });
+
+//       setText("");
+//       setReplyTo(null);
+
+//       // dismiss keyboard on Android sometimes helps visual
+//       if (Platform.OS === "android") Keyboard.dismiss();
+
+//       // scroll after small delay
+//       setTimeout(() => {
+//         listRef.current?.scrollToEnd?.({ animated: true });
+//       }, 200);
+//     } catch (e) {
+//       console.warn("CommentsSheet.send error", e);
+//     }
+//   };
+
+//   const repliesFor = (id: string) => comments.filter((c) => c.parentId === id);
+
+//   // If not visible render nothing (prevents keyboard issues)
+//   if (!visible) return null;
+
+//   return (
+//     <Modal
+//       visible={visible}
+//       animationType="fade"
+//       transparent
+//       onRequestClose={onClose}
+//     >
+//       <SafeAreaView style={styles.modalOuter}>
+//         {/* dark overlay */}
+//         <View style={styles.overlay} />
+
+//         {/* absolute sheet above bottom nav */}
+//         <View style={styles.sheet}>
+//           {/* header */}
+//           <View style={styles.header}>
+//             <Text style={styles.title}>Comments</Text>
+//             <TouchableOpacity onPress={onClose}>
+//               <Text style={styles.close}>Close</Text>
+//             </TouchableOpacity>
+//           </View>
+
+//           {/* list area */}
+//           <View style={styles.listArea}>
+//             <FlatList
+//               ref={listRef}
+//               data={comments.filter((c) => !c.parentId)}
+//               keyExtractor={(i) => i.id}
+//               renderItem={({ item }) => (
+//                 <View style={styles.commentRow}>
+//                   {item.profileImage ? (
+//                     <Image
+//                       source={{ uri: item.profileImage }}
+//                       style={styles.avatar}
+//                     />
+//                   ) : (
+//                     <View style={styles.avatarPlaceholder} />
+//                   )}
+//                   <View style={{ flex: 1 }}>
+//                     <View style={styles.rowBetween}>
+//                       <Text style={styles.name}>
+//                         {item.userName}{" "}
+//                         <Text style={styles.role}>· {item.role}</Text>
+//                       </Text>
+//                       <Text style={styles.time}>
+//                         {item.createdAt?.toDate
+//                           ? formatDistanceToNow(item.createdAt.toDate(), {
+//                               addSuffix: true,
+//                             })
+//                           : ""}
+//                       </Text>
+//                     </View>
+//                     <Text style={styles.commentText}>{item.text}</Text>
+
+//                     {/* small actions */}
+//                     <View style={styles.actionsRow}>
+//                       <TouchableOpacity onPress={() => setReplyTo(item)}>
+//                         <Text style={styles.replyBtn}>Reply</Text>
+//                       </TouchableOpacity>
+//                     </View>
+
+//                     {/* replies (one level) */}
+//                     {repliesFor(item.id).map((r) => (
+//                       <View key={r.id} style={styles.replyRow}>
+//                         <Text style={styles.replyName}>
+//                           {r.userName}{" "}
+//                           <Text style={styles.role}>· {r.role}</Text>
+//                         </Text>
+//                         <Text style={styles.replyText}>{r.text}</Text>
+//                       </View>
+//                     ))}
+//                   </View>
+//                 </View>
+//               )}
+//               keyboardShouldPersistTaps="handled"
+//               contentContainerStyle={{ paddingBottom: 12 }}
+//               showsVerticalScrollIndicator={false}
+//               ListEmptyComponent={() => (
+//                 <View style={{ padding: 18 }}>
+//                   <Text style={{ color: Colors.textSecondary }}>
+//                     No comments yet
+//                   </Text>
+//                 </View>
+//               )}
+//             />
+//           </View>
+
+//           {/* input — wrapped by KeyboardAvoidingView so it moves with keyboard */}
+//           <KeyboardAvoidingView
+//             behavior={Platform.OS === "ios" ? "padding" : "height"}
+//             keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
+//           >
+//             {replyTo && (
+//               <View style={styles.replyBar}>
+//                 <Text style={styles.replying}>
+//                   Replying to {replyTo.userName}
+//                 </Text>
+//                 <TouchableOpacity onPress={() => setReplyTo(null)}>
+//                   <Text style={styles.cancelReply}>Cancel</Text>
+//                 </TouchableOpacity>
+//               </View>
+//             )}
+
+//             <View style={styles.inputRow}>
+//               <TextInput
+//                 ref={inputRef}
+//                 value={text}
+//                 onChangeText={setText}
+//                 placeholder={
+//                   replyTo
+//                     ? `Reply to ${replyTo.userName}...`
+//                     : "Add a comment..."
+//                 }
+//                 placeholderTextColor={Colors.textMuted}
+//                 style={styles.input}
+//                 returnKeyType="send"
+//                 onSubmitEditing={send}
+//                 blurOnSubmit={false}
+//               />
+//               <TouchableOpacity
+//                 onPress={send}
+//                 disabled={!text.trim()}
+//                 style={[styles.sendBtn, { opacity: text.trim() ? 1 : 0.45 }]}
+//               >
+//                 <Text style={styles.sendText}>Send</Text>
+//               </TouchableOpacity>
+//             </View>
+//           </KeyboardAvoidingView>
+//         </View>
+//       </SafeAreaView>
+//     </Modal>
+//   );
+// }
+
+// const styles = StyleSheet.create({
+//   modalOuter: {
+//     flex: 1,
+//   },
+//   overlay: {
+//     ...StyleSheet.absoluteFillObject,
+//     backgroundColor: "rgba(0,0,0,0.35)",
+//   },
+
+//   sheet: {
+//     position: "absolute",
+//     bottom: 0,
+//     width: "100%",
+//     maxHeight: "80%",
+//     minHeight: 260,
+//     backgroundColor: Colors.lightCard,
+//     borderTopLeftRadius: 18,
+//     borderTopRightRadius: 18,
+//     overflow: "hidden",
+//     // paddingBottom: 50,
+//   },
+
+//   header: {
+//     padding: 14,
+//     flexDirection: "row",
+//     justifyContent: "space-between",
+//     borderBottomWidth: 1,
+//     borderColor: Colors.border,
+//   },
+
+//   title: { fontSize: 18, fontWeight: "700", color: Colors.textPrimary },
+//   close: { color: Colors.primary, fontWeight: "700" },
+
+//   listArea: {
+//     flex: 1,
+//   },
+
+//   commentRow: {
+//     paddingHorizontal: 12,
+//     paddingVertical: 10,
+//     borderBottomWidth: 1,
+//     borderColor: Colors.tagNew,
+//     flexDirection: "row",
+//   },
+
+//   avatar: { width: 40, height: 40, borderRadius: 20, marginRight: 10 },
+//   avatarPlaceholder: {
+//     width: 40,
+//     height: 40,
+//     borderRadius: 20,
+//     marginRight: 10,
+//     backgroundColor: Colors.surface,
+//   },
+
+//   rowBetween: { flexDirection: "row", justifyContent: "space-between" },
+//   name: { fontWeight: "700", color: Colors.textPrimary },
+//   role: { color: Colors.textSecondary, fontSize: 12 },
+//   time: { color: Colors.textMuted, fontSize: 12 },
+
+//   commentText: { marginTop: 6, color: Colors.textPrimary },
+
+//   actionsRow: { flexDirection: "row", marginTop: 8 },
+//   replyBtn: { color: Colors.primary, fontWeight: "600" },
+
+//   replyRow: {
+//     marginTop: 8,
+//     marginLeft: 8,
+//     paddingLeft: 10,
+//     borderLeftWidth: 2,
+//     borderLeftColor: Colors.surfaceDark,
+//   },
+//   replyName: { fontWeight: "700", color: Colors.textPrimary },
+//   replyText: { color: Colors.textSecondary, marginTop: 4 },
+
+//   replyBar: {
+//     flexDirection: "row",
+//     justifyContent: "space-between",
+//     paddingHorizontal: 12,
+//     paddingVertical: 8,
+//     borderTopWidth: 1,
+//     borderColor: Colors.border,
+//     backgroundColor: Colors.surface,
+//   },
+
+//   replying: { color: Colors.textPrimary },
+//   cancelReply: { color: Colors.primary, fontWeight: "700" },
+
+//   inputRow: {
+//     flexDirection: "row",
+//     padding: 12,
+//     borderTopWidth: 1,
+//     borderColor: Colors.border,
+//     backgroundColor: Colors.lightCard,
+//     alignItems: "center",
+//   },
+//   input: {
+//     flex: 1,
+//     backgroundColor: Colors.surface,
+//     paddingHorizontal: 14,
+//     paddingVertical: Platform.OS === "ios" ? 12 : 8,
+//     borderRadius: 20,
+//     color: Colors.textPrimary,
+//   },
+//   sendBtn: {
+//     marginLeft: 10,
+//     backgroundColor: Colors.primary,
+//     paddingVertical: 10,
+//     paddingHorizontal: 14,
+//     borderRadius: 12,
+//   },
+//   sendText: { color: Colors.buttonText, fontWeight: "700" },
+// });
+
+// // app/components/gallery/CommentsSheet.tsx
+// import { auth } from "@/configs/FirebaseConfig";
+// import Colors from "@/data/Colors";
+// import { formatDistanceToNow } from "date-fns";
+// import React, { useEffect, useRef, useState } from "react";
+// import {
+//   FlatList,
+//   Image,
+//   Keyboard,
+//   KeyboardAvoidingView,
+//   Modal,
+//   Platform,
+//   SafeAreaView,
+//   StyleSheet,
+//   Text,
+//   TextInput,
+//   TouchableOpacity,
+//   View,
+// } from "react-native";
+// import { commentsService } from "../../../services/commentsService";
+
+// interface CommentItemType {
+//   id: string;
+//   userId: string;
+//   userName: string;
+//   role?: string;
+//   profileImage?: string | null;
+//   text: string;
+//   parentId?: string | null;
+//   createdAt?: any;
+//   __source?: string;
+// }
+
+// export default function CommentsSheet({
+//   visible,
+//   onClose,
+//   postId,
+// }: {
+//   visible: boolean;
+//   onClose: () => void;
+//   postId: string;
+// }) {
+//   const [text, setText] = useState("");
+//   const [replyTo, setReplyTo] = useState<CommentItemType | null>(null);
+//   const [comments, setComments] = useState<CommentItemType[]>([]);
+//   const listRef = useRef<FlatList<CommentItemType> | null>(null);
+//   const inputRef = useRef<TextInput | null>(null);
+
+//   const user = auth.currentUser;
+
+//   // Load once (existing comments) then subscribe
+//   useEffect(() => {
+//     if (!visible) return;
+
+//     let mounted = true;
+
+//     (async () => {
+//       try {
+//         // 1) one-time load from nested location (safe)
+//         let once: CommentItemType[] = [];
+//         if (typeof commentsService.getCommentsOnce === "function") {
+//           once = (await commentsService.getCommentsOnce(postId)) || [];
+//         }
+//         if (!mounted) return;
+//         setComments(Array.isArray(once) ? once : []);
+
+//         // scroll to bottom after brief delay
+//         setTimeout(() => {
+//           listRef.current?.scrollToEnd?.({ animated: false });
+//         }, 120);
+
+//         // 2) subscribe merges nested+legacy internally (see service)
+//         const unsub = commentsService.subscribeToComments(
+//           postId,
+//           (arr: any[]) => {
+//             if (!mounted) return;
+//             setComments(Array.isArray(arr) ? arr : []);
+//             // ensure we keep the list scrolled to bottom if user near bottom
+//             setTimeout(() => {
+//               listRef.current?.scrollToEnd?.({ animated: true });
+//             }, 120);
+//           }
+//         );
+
+//         return () => {
+//           mounted = false;
+//           if (unsub) unsub();
+//         };
+//       } catch (e) {
+//         console.warn("CommentsSheet.load error", e);
+//       }
+//     })();
+//   }, [visible, postId]);
+
+//   // Send comment
+//   const send = async () => {
+//     if (!text.trim() || !user) return;
+//     try {
+//       await commentsService.addComment({
+//         postId,
+//         userId: user.uid,
+//         name: user.displayName ?? "User",
+//         role: "user",
+//         profileImage: (user as any)?.photoURL ?? null,
+//         text: text.trim(),
+//         parentId: replyTo ? replyTo.id : null,
+//       });
+
+//       setText("");
+//       setReplyTo(null);
+
+//       // dismiss keyboard on Android sometimes helps visual
+//       if (Platform.OS === "android") Keyboard.dismiss();
+
+//       // scroll after small delay
+//       setTimeout(() => {
+//         listRef.current?.scrollToEnd?.({ animated: true });
+//       }, 200);
+//     } catch (e) {
+//       console.warn("CommentsSheet.send error", e);
+//     }
+//   };
+
+//   const repliesFor = (id: string) => comments.filter((c) => c.parentId === id);
+
+//   // If not visible render nothing (prevents keyboard issues)
+//   if (!visible) return null;
+
+//   return (
+//     <Modal
+//       visible={visible}
+//       animationType="fade"
+//       transparent
+//       onRequestClose={onClose}
+//     >
+//       <SafeAreaView style={styles.modalOuter}>
+//         {/* dark overlay */}
+//         <View style={styles.overlay} />
+
+//         {/* KeyboardAvoidingView wraps the whole sheet */}
+//         <KeyboardAvoidingView
+//           behavior={Platform.OS === "ios" ? "padding" : 5}
+//           keyboardVerticalOffset={Platform.OS === "ios" ? 20 : -10}
+//         >
+//           {/* sheet anchored to bottom inside avoider */}
+//           <View style={styles.sheet}>
+//             {/* header */}
+//             <View style={styles.header}>
+//               <Text style={styles.title}>Comments</Text>
+//               <TouchableOpacity onPress={onClose}>
+//                 <Text style={styles.close}>Close</Text>
+//               </TouchableOpacity>
+//             </View>
+
+//             {/* list area */}
+//             <View style={styles.listArea}>
+//               <FlatList
+//                 ref={listRef}
+//                 data={comments.filter((c) => !c.parentId)}
+//                 keyExtractor={(i) => i.id}
+//                 renderItem={({ item }) => (
+//                   <View style={styles.commentRow}>
+//                     {item.profileImage ? (
+//                       <Image
+//                         source={{ uri: item.profileImage }}
+//                         style={styles.avatar}
+//                       />
+//                     ) : (
+//                       <View style={styles.avatarPlaceholder} />
+//                     )}
+//                     <View style={{ flex: 1 }}>
+//                       <View style={styles.rowBetween}>
+//                         <Text style={styles.name}>
+//                           {item.userName}{" "}
+//                           <Text style={styles.role}>· {item.role}</Text>
+//                         </Text>
+//                         <Text style={styles.time}>
+//                           {item.createdAt?.toDate
+//                             ? formatDistanceToNow(item.createdAt.toDate(), {
+//                                 addSuffix: true,
+//                               })
+//                             : ""}
+//                         </Text>
+//                       </View>
+//                       <Text style={styles.commentText}>{item.text}</Text>
+
+//                       {/* small actions */}
+//                       <View style={styles.actionsRow}>
+//                         <TouchableOpacity onPress={() => setReplyTo(item)}>
+//                           <Text style={styles.replyBtn}>Reply</Text>
+//                         </TouchableOpacity>
+//                       </View>
+
+//                       {/* replies (one level) */}
+//                       {repliesFor(item.id).map((r) => (
+//                         <View key={r.id} style={styles.replyRow}>
+//                           <Text style={styles.replyName}>
+//                             {r.userName}{" "}
+//                             <Text style={styles.role}>· {r.role}</Text>
+//                           </Text>
+//                           <Text style={styles.replyText}>{r.text}</Text>
+//                         </View>
+//                       ))}
+//                     </View>
+//                   </View>
+//                 )}
+//                 keyboardShouldPersistTaps="handled"
+//                 contentContainerStyle={{ paddingBottom: 12 }}
+//                 showsVerticalScrollIndicator={false}
+//                 ListEmptyComponent={() => (
+//                   <View style={{ padding: 18 }}>
+//                     <Text style={{ color: Colors.textSecondary }}>
+//                       No comments yet
+//                     </Text>
+//                   </View>
+//                 )}
+//               />
+//             </View>
+
+//             {/* input / reply bar (now inside same sheet, no inner KAV) */}
+//             {replyTo && (
+//               <View style={styles.replyBar}>
+//                 <Text style={styles.replying}>
+//                   Replying to {replyTo.userName}
+//                 </Text>
+//                 <TouchableOpacity onPress={() => setReplyTo(null)}>
+//                   <Text style={styles.cancelReply}>Cancel</Text>
+//                 </TouchableOpacity>
+//               </View>
+//             )}
+
+//             <View style={styles.inputRow}>
+//               <TextInput
+//                 ref={inputRef}
+//                 value={text}
+//                 onChangeText={setText}
+//                 placeholder={
+//                   replyTo
+//                     ? `Reply to ${replyTo.userName}...`
+//                     : "Add a comment..."
+//                 }
+//                 placeholderTextColor={Colors.textMuted}
+//                 style={styles.input}
+//                 returnKeyType="send"
+//                 onSubmitEditing={send}
+//                 blurOnSubmit={false}
+//               />
+//               <TouchableOpacity
+//                 onPress={send}
+//                 disabled={!text.trim()}
+//                 style={[styles.sendBtn, { opacity: text.trim() ? 1 : 0.45 }]}
+//               >
+//                 <Text style={styles.sendText}>Send</Text>
+//               </TouchableOpacity>
+//             </View>
+//           </View>
+//         </KeyboardAvoidingView>
+//       </SafeAreaView>
+//     </Modal>
+//   );
+// }
+
+// const styles = StyleSheet.create({
+//   modalOuter: {
+//     flex: 1,
+//   },
+//   overlay: {
+//     ...StyleSheet.absoluteFillObject,
+//     backgroundColor: "rgba(0,0,0,0.35)",
+//   },
+
+//   // NEW: wrapper that keeps sheet at bottom and cooperates with keyboard
+//   keyboardAvoider: {
+//     flex: 1,
+//     justifyContent: "flex-end",
+//   },
+
+//   sheet: {
+//     // no absolute positioning; let keyboardAvoider control the bottom
+//     width: "100%",
+//     maxHeight: "80%",
+//     minHeight: 260,
+//     backgroundColor: Colors.lightCard,
+//     borderTopLeftRadius: 18,
+//     borderTopRightRadius: 18,
+//     overflow: "hidden",
+//   },
+
+//   header: {
+//     padding: 14,
+//     flexDirection: "row",
+//     justifyContent: "space-between",
+//     borderBottomWidth: 1,
+//     borderColor: Colors.border,
+//   },
+
+//   title: { fontSize: 18, fontWeight: "700", color: Colors.textPrimary },
+//   close: { color: Colors.primary, fontWeight: "700" },
+
+//   listArea: {
+//     flex: 1,
+//   },
+
+//   commentRow: {
+//     paddingHorizontal: 12,
+//     paddingVertical: 10,
+//     borderBottomWidth: 1,
+//     borderColor: Colors.tagNew,
+//     flexDirection: "row",
+//   },
+
+//   avatar: { width: 40, height: 40, borderRadius: 20, marginRight: 10 },
+//   avatarPlaceholder: {
+//     width: 40,
+//     height: 40,
+//     borderRadius: 20,
+//     marginRight: 10,
+//     backgroundColor: Colors.surface,
+//   },
+
+//   rowBetween: { flexDirection: "row", justifyContent: "space-between" },
+//   name: { fontWeight: "700", color: Colors.textPrimary },
+//   role: { color: Colors.textSecondary, fontSize: 12 },
+//   time: { color: Colors.textMuted, fontSize: 12 },
+
+//   commentText: { marginTop: 6, color: Colors.textPrimary },
+
+//   actionsRow: { flexDirection: "row", marginTop: 8 },
+//   replyBtn: { color: Colors.primary, fontWeight: "600" },
+
+//   replyRow: {
+//     marginTop: 8,
+//     marginLeft: 8,
+//     paddingLeft: 10,
+//     borderLeftWidth: 2,
+//     borderLeftColor: Colors.surfaceDark,
+//   },
+//   replyName: { fontWeight: "700", color: Colors.textPrimary },
+//   replyText: { color: Colors.textSecondary, marginTop: 4 },
+
+//   replyBar: {
+//     flexDirection: "row",
+//     justifyContent: "space-between",
+//     paddingHorizontal: 12,
+//     paddingVertical: 8,
+//     borderTopWidth: 1,
+//     borderColor: Colors.border,
+//     backgroundColor: Colors.surface,
+//   },
+
+//   replying: { color: Colors.textPrimary },
+//   cancelReply: { color: Colors.primary, fontWeight: "700" },
+
+//   inputRow: {
+//     flexDirection: "row",
+//     padding: 12,
+//     borderTopWidth: 1,
+//     borderColor: Colors.border,
+//     backgroundColor: Colors.lightCard,
+//     alignItems: "center",
+//   },
+//   input: {
+//     flex: 1,
+//     backgroundColor: Colors.surface,
+//     paddingHorizontal: 14,
+//     paddingVertical: Platform.OS === "ios" ? 12 : 8,
+//     borderRadius: 20,
+//     color: Colors.textPrimary,
+//   },
+//   sendBtn: {
+//     marginLeft: 10,
+//     backgroundColor: Colors.primary,
+//     paddingVertical: 10,
+//     paddingHorizontal: 14,
+//     borderRadius: 12,
+//   },
+//   sendText: { color: Colors.buttonText, fontWeight: "700" },
+// });
+
 // app/components/gallery/CommentsSheet.tsx
 import { auth } from "@/configs/FirebaseConfig";
 import Colors from "@/data/Colors";
-import { formatDistanceToNow } from "date-fns";
 import React, { useEffect, useRef, useState } from "react";
 import {
   FlatList,
   Image,
   Keyboard,
-  KeyboardAvoidingView,
   Modal,
   Platform,
   SafeAreaView,
@@ -448,7 +1200,6 @@ export default function CommentsSheet({
 
     (async () => {
       try {
-        // 1) one-time load from nested location (safe)
         let once: CommentItemType[] = [];
         if (typeof commentsService.getCommentsOnce === "function") {
           once = (await commentsService.getCommentsOnce(postId)) || [];
@@ -461,13 +1212,11 @@ export default function CommentsSheet({
           listRef.current?.scrollToEnd?.({ animated: false });
         }, 120);
 
-        // 2) subscribe merges nested+legacy internally (see service)
         const unsub = commentsService.subscribeToComments(
           postId,
           (arr: any[]) => {
             if (!mounted) return;
             setComments(Array.isArray(arr) ? arr : []);
-            // ensure we keep the list scrolled to bottom if user near bottom
             setTimeout(() => {
               listRef.current?.scrollToEnd?.({ animated: true });
             }, 120);
@@ -501,10 +1250,8 @@ export default function CommentsSheet({
       setText("");
       setReplyTo(null);
 
-      // dismiss keyboard on Android sometimes helps visual
       if (Platform.OS === "android") Keyboard.dismiss();
 
-      // scroll after small delay
       setTimeout(() => {
         listRef.current?.scrollToEnd?.({ animated: true });
       }, 200);
@@ -515,99 +1262,57 @@ export default function CommentsSheet({
 
   const repliesFor = (id: string) => comments.filter((c) => c.parentId === id);
 
-  // If not visible render nothing (prevents keyboard issues)
   if (!visible) return null;
 
   return (
     <Modal
       visible={visible}
-      animationType="fade"
+      animationType="slide"
       transparent
       onRequestClose={onClose}
     >
       <SafeAreaView style={styles.modalOuter}>
-        {/* dark overlay */}
+        {/* dark background */}
         <View style={styles.overlay} />
 
-        {/* absolute sheet above bottom nav */}
-        <View style={styles.sheet}>
-          {/* header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Comments</Text>
-            <TouchableOpacity onPress={onClose}>
-              <Text style={styles.close}>Close</Text>
-            </TouchableOpacity>
-          </View>
+        {/* Bottom anchored fixed sheet */}
+        <View style={styles.bottomSheetContainer}>
+          {/* Sheet */}
+          <View style={styles.sheet}>
+            {/* Header */}
+            <View style={styles.header}>
+              <Text style={styles.title}>Comments</Text>
+              <TouchableOpacity onPress={onClose}>
+                <Text style={styles.close}>Close</Text>
+              </TouchableOpacity>
+            </View>
 
-          {/* list area */}
-          <View style={styles.listArea}>
+            {/* Comments list */}
             <FlatList
               ref={listRef}
               data={comments.filter((c) => !c.parentId)}
-              keyExtractor={(i) => i.id}
+              keyExtractor={(item) => item.id}
               renderItem={({ item }) => (
                 <View style={styles.commentRow}>
-                  {item.profileImage ? (
-                    <Image
-                      source={{ uri: item.profileImage }}
-                      style={styles.avatar}
-                    />
-                  ) : (
-                    <View style={styles.avatarPlaceholder} />
-                  )}
+                  <Image
+                    source={{ uri: item.profileImage }}
+                    style={styles.avatar}
+                  />
                   <View style={{ flex: 1 }}>
-                    <View style={styles.rowBetween}>
-                      <Text style={styles.name}>
-                        {item.userName}{" "}
-                        <Text style={styles.role}>· {item.role}</Text>
-                      </Text>
-                      <Text style={styles.time}>
-                        {item.createdAt?.toDate
-                          ? formatDistanceToNow(item.createdAt.toDate(), {
-                              addSuffix: true,
-                            })
-                          : ""}
-                      </Text>
-                    </View>
+                    <Text style={styles.name}>{item.userName}</Text>
                     <Text style={styles.commentText}>{item.text}</Text>
-
-                    {/* small actions */}
-                    <View style={styles.actionsRow}>
-                      <TouchableOpacity onPress={() => setReplyTo(item)}>
-                        <Text style={styles.replyBtn}>Reply</Text>
-                      </TouchableOpacity>
-                    </View>
-
-                    {/* replies (one level) */}
-                    {repliesFor(item.id).map((r) => (
-                      <View key={r.id} style={styles.replyRow}>
-                        <Text style={styles.replyName}>
-                          {r.userName}{" "}
-                          <Text style={styles.role}>· {r.role}</Text>
-                        </Text>
-                        <Text style={styles.replyText}>{r.text}</Text>
-                      </View>
-                    ))}
+                    <TouchableOpacity onPress={() => setReplyTo(item)}>
+                      <Text style={styles.replyBtn}>Reply</Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
               )}
-              keyboardShouldPersistTaps="handled"
-              contentContainerStyle={{ paddingBottom: 12 }}
               showsVerticalScrollIndicator={false}
-              ListEmptyComponent={() => (
-                <View style={{ padding: 18 }}>
-                  <Text style={{ color: Colors.textSecondary }}>
-                    No comments yet
-                  </Text>
-                </View>
-              )}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ paddingBottom: 10 }}
             />
-          </View>
 
-          {/* input — wrapped by KeyboardAvoidingView so it moves with keyboard */}
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : undefined}
-          >
+            {/* Reply Bar */}
             {replyTo && (
               <View style={styles.replyBar}>
                 <Text style={styles.replying}>
@@ -619,16 +1324,12 @@ export default function CommentsSheet({
               </View>
             )}
 
+            {/* Input */}
             <View style={styles.inputRow}>
               <TextInput
-                ref={inputRef}
                 value={text}
                 onChangeText={setText}
-                placeholder={
-                  replyTo
-                    ? `Reply to ${replyTo.userName}...`
-                    : "Add a comment..."
-                }
+                placeholder="Add a comment..."
                 placeholderTextColor={Colors.textMuted}
                 style={styles.input}
                 returnKeyType="send"
@@ -638,12 +1339,12 @@ export default function CommentsSheet({
               <TouchableOpacity
                 onPress={send}
                 disabled={!text.trim()}
-                style={[styles.sendBtn, { opacity: text.trim() ? 1 : 0.45 }]}
+                style={[styles.sendBtn, { opacity: text.trim() ? 1 : 0.5 }]}
               >
                 <Text style={styles.sendText}>Send</Text>
               </TouchableOpacity>
             </View>
-          </KeyboardAvoidingView>
+          </View>
         </View>
       </SafeAreaView>
     </Modal>
@@ -659,11 +1360,28 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.35)",
   },
 
-  sheet: {
+  // 🔥 New: this pins the sheet to the bottom of the screen
+  sheetContainer: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+
+  bottomSheetContainer: {
     position: "absolute",
     bottom: 0,
     width: "100%",
-    maxHeight: "85%",
+  },
+  // you can keep this or remove, now unused
+  keyboardAvoider: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+
+  sheet: {
+    width: "100%",
+    maxHeight: "80%",
     minHeight: 260,
     backgroundColor: Colors.lightCard,
     borderTopLeftRadius: 18,

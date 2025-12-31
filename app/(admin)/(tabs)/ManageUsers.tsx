@@ -1,3 +1,4 @@
+// app/(admin)/(tabs)/ManageUsers.tsx
 import { db } from "@/configs/FirebaseConfig";
 import Colors from "@/data/Colors";
 import { Ionicons } from "@expo/vector-icons";
@@ -123,7 +124,9 @@ export default function ManageUsers() {
           <Text style={styles.email}>{item.email}</Text>
 
           <View style={styles.badgesRow}>
-            <View style={[styles.badge, { backgroundColor: getRoleColor(role) }]}>
+            <View
+              style={[styles.badge, { backgroundColor: getRoleColor(role) }]}
+            >
               <Text style={styles.badgeText}>{role.toUpperCase()}</Text>
             </View>
 

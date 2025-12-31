@@ -1,4 +1,6 @@
-import { useRouter } from "expo-router";
+// app/(shared)/complaints/ComplaintsList.tsx
+import { useLocalSearchParams, useRouter } from "expo-router";
+
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -48,7 +50,16 @@ export default function ComplaintsList({
   const router = useRouter();
   const [complaints, setComplaints] = useState<ComplaintDoc[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<FilterKey>("all");
+  const params = useLocalSearchParams<{ filter?: FilterKey }>();
+
+  const [filter, setFilter] = useState<FilterKey>(params.filter ?? "all");
+
+  /* 🔥 Sync filter when coming from dashboard */
+  useEffect(() => {
+    if (params.filter) {
+      setFilter(params.filter);
+    }
+  }, [params.filter]);
 
   useEffect(() => {
     const unsub = complaintService.subscribeToAllComplaints((list) => {
@@ -60,6 +71,13 @@ export default function ComplaintsList({
 
   const filteredList = useMemo(() => {
     if (filter === "all") return complaints;
+
+    if (filter === "in_progress") {
+      return complaints.filter(
+        (c) => c.status === "accepted" || c.status === "in_progress"
+      );
+    }
+
     return complaints.filter((c) => c.status === filter);
   }, [complaints, filter]);
 

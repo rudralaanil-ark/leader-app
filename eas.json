@@ -5,7 +5,7 @@
   },
   "build": {
     "development": {
-      "developmentClient": true,
+      "developmentClient": false, // set to true if you want to use with dev client, this is previously set to true in the dev mode.
       "distribution": "internal"
     },
     "preview": {

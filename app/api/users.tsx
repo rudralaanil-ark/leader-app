@@ -1,3 +1,4 @@
+// app/api/users.tsx
 import { db } from "@/configs/FirebaseConfig";
 import { UserType } from "@/contexts/AuthContext";
 import { doc, getDoc, setDoc } from "firebase/firestore";

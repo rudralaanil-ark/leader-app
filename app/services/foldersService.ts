@@ -239,8 +239,11 @@ import {
   query,
   serverTimestamp,
   updateDoc,
+  where,
+  writeBatch,
 } from "firebase/firestore";
 import { Folder, FolderImage } from "../utils/types";
+import { postsService } from "./postsService";
 
 const FOLDER_COLLECTION = "folders";
 
@@ -346,7 +349,39 @@ export const foldersService = {
     return snap.docs.map((d) => ({ id: d.id, ...d.data() })) as FolderImage[];
   },
 
+  // async deleteFolder(folderId: string) {
+  //   await deleteDoc(doc(db, FOLDER_COLLECTION, folderId));
+  // },
+
   async deleteFolder(folderId: string) {
-    await deleteDoc(doc(db, FOLDER_COLLECTION, folderId));
+    const batch = writeBatch(db);
+
+    // 1️⃣ Get folder images
+    const imagesSnap = await getDocs(
+      collection(db, `${FOLDER_COLLECTION}/${folderId}/images`)
+    );
+
+    imagesSnap.forEach((docSnap) => {
+      batch.delete(docSnap.ref);
+    });
+
+    // 2️⃣ Find linked post
+    const postQuery = query(
+      collection(db, "posts"),
+      where("folderId", "==", folderId)
+    );
+
+    const postSnap = await getDocs(postQuery);
+
+    for (const p of postSnap.docs) {
+      // delete post subcollections first (likes/comments/shares)
+      await postsService.deletePost(p.id);
+    }
+
+    // 3️⃣ Delete folder document LAST
+    batch.delete(doc(db, FOLDER_COLLECTION, folderId));
+
+    // 4️⃣ Commit batch
+    await batch.commit();
   },
 };

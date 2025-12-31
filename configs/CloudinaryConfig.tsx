@@ -19,6 +19,7 @@
 //   unsigned: true,
 // };
 
+// configs/CloudinaryConfig.tsx
 export const CLOUDINARY = {
   CLOUD_NAME: process.env.EXPO_PUBLIC_CLOUD_NAME,
   API_URL: "https://api.cloudinary.com/v1_1",

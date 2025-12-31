@@ -1,6 +1,6 @@
 // ✅ /data/LeaderInfo.ts
 export default {
-  name: "Ch Ashok Kumar",
+  name: "Chinthalapudi Ashok Kumar",
   title: "The Leader",
   profileImage: require("@/assets/images/AshokLogo.png"),
 };

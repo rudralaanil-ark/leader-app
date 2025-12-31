@@ -1,3 +1,4 @@
+// app/(monitor)/(tabs)/api/news.ts
 import { db } from "@/configs/FirebaseConfig";
 import {
   addDoc,

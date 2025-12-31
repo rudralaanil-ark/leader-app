@@ -1,3 +1,4 @@
+// app/(admin)/news/EditNews.tsx
 import { uploadImageToCloudinary } from "@/app/api/uploadImage";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as ImagePicker from "expo-image-picker";

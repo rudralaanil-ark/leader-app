@@ -1,3 +1,4 @@
+// app/(monitor)/(tabs)/Gallery.tsx
 import GalleryList from "@/app/(shared)/gallery/screens/GalleryList";
 import React from "react";
 

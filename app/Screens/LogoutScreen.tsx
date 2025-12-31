@@ -1,3 +1,4 @@
+// app/Screens/LogoutScreen.tsx
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { LinearGradient } from "expo-linear-gradient";

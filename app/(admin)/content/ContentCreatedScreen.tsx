@@ -1,3 +1,4 @@
+// app/(admin)/content/ContentCreatedScreen.tsx
 import TopSectionTabs from "@/componenets/TopSectionTabs";
 import { db } from "@/configs/FirebaseConfig";
 import Colors from "@/data/Colors";
@@ -22,7 +23,8 @@ import VideosContent from "./VideosContent";
 export default function ContentCreatedScreen() {
   const [activeCategory, setActiveCategory] = useState("news");
   const [selectedMonitor, setSelectedMonitor] = useState("all");
-  const [selectedMonitorName, setSelectedMonitorName] = useState("All Monitors");
+  const [selectedMonitorName, setSelectedMonitorName] =
+    useState("All Monitors");
   const [monitors, setMonitors] = useState([]);
 
   const [monitorModalVisible, setMonitorModalVisible] = useState(false);
@@ -49,7 +51,6 @@ export default function ContentCreatedScreen() {
 
   return (
     <View style={styles.container}>
-
       {/* 🔹 MONITOR SELECTOR BAR */}
       <TouchableOpacity
         style={styles.monitorSelectorBar}
@@ -70,7 +71,10 @@ export default function ContentCreatedScreen() {
             <Text style={styles.modalTitle}>Select Monitor</Text>
 
             <FlatList
-              data={[{ id: "all", fullName: "All Monitors", profileImage: null }, ...monitors]}
+              data={[
+                { id: "all", fullName: "All Monitors", profileImage: null },
+                ...monitors,
+              ]}
               keyExtractor={(i) => i.id}
               renderItem={({ item }) => (
                 <TouchableOpacity
@@ -87,7 +91,12 @@ export default function ContentCreatedScreen() {
                       style={styles.modalAvatar}
                     />
                   ) : (
-                    <View style={[styles.modalAvatar, styles.modalAvatarPlaceholder]}>
+                    <View
+                      style={[
+                        styles.modalAvatar,
+                        styles.modalAvatarPlaceholder,
+                      ]}
+                    >
                       <Text style={styles.modalAvatarLetter}>
                         {item.fullName.charAt(0)}
                       </Text>
@@ -118,11 +127,21 @@ export default function ContentCreatedScreen() {
 
       {/* CONTENT */}
       <View style={styles.contentWrapper}>
-        {activeCategory === "news" && <NewsContent monitorId={selectedMonitor} />}
-        {activeCategory === "events" && <EventContent monitorId={selectedMonitor} />}
-        {activeCategory === "surveys" && <SurveyContent monitorId={selectedMonitor} />}
-        {activeCategory === "images" && <ImagesContent monitorId={selectedMonitor} />}
-        {activeCategory === "videos" && <VideosContent monitorId={selectedMonitor} />}
+        {activeCategory === "news" && (
+          <NewsContent monitorId={selectedMonitor} />
+        )}
+        {activeCategory === "events" && (
+          <EventContent monitorId={selectedMonitor} />
+        )}
+        {activeCategory === "surveys" && (
+          <SurveyContent monitorId={selectedMonitor} />
+        )}
+        {activeCategory === "images" && (
+          <ImagesContent monitorId={selectedMonitor} />
+        )}
+        {activeCategory === "videos" && (
+          <VideosContent monitorId={selectedMonitor} />
+        )}
       </View>
     </View>
   );

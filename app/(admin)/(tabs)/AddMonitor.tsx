@@ -1,3 +1,4 @@
+// app/(admin)/(tabs)/AddMonitor.tsx
 import { createUserInFirestore } from "@/app/api/users";
 import { getSecondaryAuth } from "@/configs/FirebaseConfig";
 import { useAuth } from "@/contexts/AuthContext";
@@ -35,7 +36,7 @@ export default function ManageMonitors() {
     const backHandler = BackHandler.addEventListener(
       "hardwareBackPress",
       () => {
-        router.replace("/(admin)/(tabs)/Monitors");
+        router.replace("/(admin)/(tabs)/ManageMonitors");
         return true;
       }
     );

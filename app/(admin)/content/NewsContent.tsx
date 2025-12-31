@@ -1,3 +1,4 @@
+// app/(admin)/content/NewsContent.tsx
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
@@ -34,7 +35,16 @@ interface MonitorMapType {
   [key: string]: { fullName: string; profileImage?: string | null };
 }
 
-export default function AdminNewsContent({ monitorId }: { monitorId: string }) {
+export default function AdminNewsContent({
+  monitorId,
+  dateRange,
+}: {
+  monitorId: string;
+  dateRange?: {
+    from?: Date;
+    to?: Date;
+  };
+}) {
   const router = useRouter();
   const [news, setNews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,14 +74,31 @@ export default function AdminNewsContent({ monitorId }: { monitorId: string }) {
     }
 
     const unsub = onSnapshot(q, (snap) => {
-      const arr = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      setNews(arr);
+      const arr = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+
+      let filtered = arr;
+
+      /* DATE RANGE FILTER (OPTIONAL) */
+      if (dateRange?.from || dateRange?.to) {
+        filtered = arr.filter((item) => {
+          const d = item.createdAt?.toDate?.() ?? new Date(item.createdAt);
+
+          if (!d) return false;
+
+          if (dateRange.from && d < dateRange.from) return false;
+          if (dateRange.to && d > dateRange.to) return false;
+
+          return true;
+        });
+      }
+
+      setNews(filtered);
       setLoading(false);
       setRefreshing(false);
     });
 
     return unsub;
-  }, [monitorId]);
+  }, [monitorId, dateRange]);
 
   useEffect(() => {
     const unsub = loadNews();

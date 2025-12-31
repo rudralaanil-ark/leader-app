@@ -290,7 +290,6 @@ import ProfileTabIcon from "@/componenets/Shared/ProfileTabIcon";
 import { useAuth } from "@/contexts/AuthContext";
 import Colors from "@/data/Colors";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { Tabs } from "expo-router";
 import React from "react";
 import { StatusBar } from "react-native";
@@ -371,22 +370,33 @@ export default function TabsLayout() {
             ),
           }}
         />
+
+        <Tabs.Screen
+          name="Gallery"
+          options={{
+            headerShown: false,
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="images" size={size} color={color} />
+            ),
+          }}
+        />
+
+        <Tabs.Screen
+          name="Video"
+          options={{
+            headerTitle: "Videos",
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="videocam" size={size} color={color} />
+            ),
+          }}
+        />
+
         <Tabs.Screen
           name="Events"
           options={{
             headerShown: false,
             tabBarIcon: ({ color, size }) => (
               <Ionicons name="calendar" size={size} color={color} />
-            ),
-          }}
-        />
-        +
-        <Tabs.Screen
-          name="Poll"
-          options={{
-            headerTitle: "Choose your Opinion",
-            tabBarIcon: ({ color, size }) => (
-              <MaterialCommunityIcons name="poll" size={size} color={color} />
             ),
           }}
         />
@@ -405,17 +415,21 @@ export default function TabsLayout() {
           }}
         />
         {/* Hidden screens */}
+
         <Tabs.Screen
-          name="Gallery"
-          options={{ href: null, headerShown: false }}
+          name="Poll"
+          options={{
+            href: null,
+          }}
         />
-        <Tabs.Screen name="Video" options={{ href: null }} />
+
         <Tabs.Screen name="Profile" options={{ href: null }} />
         <Tabs.Screen name="ComplaintBox" options={{ href: null }} />
         <Tabs.Screen name="Survey" options={{ href: null }} />
         <Tabs.Screen name="Help" options={{ href: null }} />
         <Tabs.Screen name="NewsDetails" options={{ href: null }} />
         <Tabs.Screen name="EventDetailsUser" options={{ href: null }} />
+        <Tabs.Screen name="ComplaintDetails" options={{ href: null }} />
       </Tabs>
     </>
   );

@@ -377,6 +377,7 @@ import {
   query,
   runTransaction,
   serverTimestamp,
+  setDoc,
   updateDoc,
   where,
 } from "firebase/firestore";
@@ -388,25 +389,59 @@ const POSTS = "posts";
 
 export const postsService = {
   // ---------- existing functions (unchanged) ----------
+  // async createPost(data: Partial<Post>) {
+  //   const safeType: Post["type"] = data.type === "video" ? "video" : "image"; // 🔒 default = image
+
+  //   const ref = await addDoc(collection(db, POSTS), {
+  //     ...data,
+
+  //     type: safeType, // 🔥 ENFORCED
+  //     postType: null, // 🔥 STOP legacy usage
+
+  //     tags: data.tags ?? [],
+  //     media: data.media ?? [],
+  //     title: data.title ?? null,
+
+  //     likeCount: 0,
+  //     commentCount: 0,
+  //     shareCount: 0,
+
+  //     createdAt: serverTimestamp(),
+  //     updatedAt: serverTimestamp(),
+  //   });
+
+  //   return ref.id;
+  // }
+
   async createPost(data: Partial<Post>) {
-    const ref = await addDoc(collection(db, POSTS), {
+    const safeType: Post["type"] = data.type === "video" ? "video" : "image";
+
+    // 🔥 COMMON PAYLOAD
+    const payload = {
       ...data,
+      type: safeType,
+      postType: null,
       tags: data.tags ?? [],
       media: data.media ?? [],
-      postType: data.postType ?? null,
       title: data.title ?? null,
-
       likeCount: 0,
       commentCount: 0,
       shareCount: 0,
-
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-    });
+    };
 
+    // ✅ CASE 1: ID PROVIDED (VIDEO, S3, CACHE SAFE)
+    if (data.id) {
+      const ref = doc(db, POSTS, data.id);
+      await setDoc(ref, payload);
+      return data.id;
+    }
+
+    // ✅ CASE 2: NO ID (GALLERY / NORMAL POSTS)
+    const ref = await addDoc(collection(db, POSTS), payload);
     return ref.id;
   },
-
   async getAllPosts() {
     const q = query(collection(db, POSTS), orderBy("createdAt", "desc"));
     const snap = await getDocs(q);
@@ -421,16 +456,39 @@ export const postsService = {
   },
 
   async updatePost(postId: string, data: Partial<Post>) {
+    const updateData: any = { ...data };
+
+    if ("type" in updateData) {
+      updateData.type = updateData.type === "video" ? "video" : "image"; // 🔒 enforce
+    }
+
+    updateData.postType = null; // 🔥 kill legacy field
+
     await updateDoc(doc(db, POSTS, postId), {
-      ...data,
+      ...updateData,
       updatedAt: serverTimestamp(),
     });
   },
+  // async deletePost(postId: string) {
+  //   await deleteDoc(doc(db, POSTS, postId));
+  // },
 
   async deletePost(postId: string) {
-    await deleteDoc(doc(db, POSTS, postId));
-  },
+    const postRef = doc(db, POSTS, postId);
 
+    // 1️⃣ delete subcollections (video posts only)
+    const subCols = ["likes", "comments", "shares"];
+
+    for (const col of subCols) {
+      const snap = await getDocs(collection(postRef, col));
+      for (const d of snap.docs) {
+        await deleteDoc(d.ref);
+      }
+    }
+
+    // 2️⃣ delete main post
+    await deleteDoc(postRef);
+  },
   // ---------- NEW: Likes API ----------
   /**
    * Like a post (stores a doc at posts/{postId}/likes/{userId} and increments likeCount)
@@ -510,7 +568,12 @@ export const postsService = {
   },
 
   subscribeToPostType(type: Post["type"], cb: (list: Post[]) => void) {
-    const q = query(collection(db, POSTS), where("type", "==", type));
+    const q = query(
+      collection(db, POSTS),
+      where("type", "==", type),
+      orderBy("createdAt", "desc") // 🔥 ADD THIS
+    );
+
     return onSnapshot(q, (snap) => {
       cb(snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) } as Post)));
     });

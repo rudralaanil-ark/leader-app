@@ -13,6 +13,8 @@
 //   tab_bar_border: "#000000ff",
 // };
 
+// data/Colors.tsx
+
 const Colors = {
   // 🌈 Existing Brand Theme
   primary: "#007AFF",

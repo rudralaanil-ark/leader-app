@@ -1,4 +1,118 @@
-// app/(monitor)/(tabs)/_layout.tsx
+// // app/(monitor)/(tabs)/_layout.tsx
+
+// import ProfileTabIcon from "@/componenets/Shared/ProfileTabIcon";
+// import { useAuth } from "@/contexts/AuthContext";
+// import Colors from "@/data/Colors";
+// import Ionicons from "@expo/vector-icons/Ionicons";
+// import { Tabs } from "expo-router";
+// import { GestureHandlerRootView } from "react-native-gesture-handler";
+
+// export default function MonitorTabs() {
+//   const { user } = useAuth();
+
+//   return (
+//     <GestureHandlerRootView style={{ flex: 1 }}>
+//       <Tabs
+//         screenOptions={{
+//           headerShown: false,
+//           tabBarActiveTintColor: Colors.primary,
+//           tabBarInactiveTintColor: Colors.Gray,
+//         }}
+//       >
+//         {/* MAIN TABS */}
+//         <Tabs.Screen
+//           name="Dashboard"
+//           options={{
+//             title: "Dashboard",
+//             tabBarIcon: ({ color, size }) => (
+//               <Ionicons name="speedometer-outline" size={size} color={color} />
+//             ),
+//           }}
+//         />
+//         <Tabs.Screen
+//           name="NewsList"
+//           options={{
+//             title: "News",
+//             tabBarIcon: ({ color, size }) => (
+//               <Ionicons name="newspaper-outline" size={size} color={color} />
+//             ),
+//           }}
+//         />
+//         <Tabs.Screen
+//           name="EventList"
+//           options={{
+//             title: "Events",
+//             tabBarIcon: ({ color, size }) => (
+//               <Ionicons name="calendar-outline" size={size} color={color} />
+//             ),
+//           }}
+//         />
+//         <Tabs.Screen
+//           name="Gallery"
+//           options={{
+//             title: "Gallery",
+//             tabBarIcon: ({ color, size }) => (
+//               <Ionicons name="images-outline" size={size} color={color} />
+//             ),
+//           }}
+//         />
+//         <Tabs.Screen
+//           name="Monitor"
+//           options={{
+//             title: "Monitor",
+//             tabBarIcon: ({ color, size, focused }) => (
+//               <ProfileTabIcon
+//                 color={color}
+//                 size={size}
+//                 focused={focused}
+//                 imageUrl={user?.profileImage}
+//               />
+//             ),
+//           }}
+//         />
+//         <Tabs.Screen
+//           name="Complaints"
+//           options={{
+//             title: "Complaints",
+//             tabBarIcon: ({ color, size }) => (
+//               <Ionicons name="chatbubbles-outline" color={color} size={size} />
+//             ),
+//           }}
+//         />
+
+//         <Tabs.Screen name="ManageVideos" options={{ title: "Videos" }} />
+//         <Tabs.Screen name="AddVideo" options={{ href: null }} />
+
+//         {/* Hidden screens */}
+//         <Tabs.Screen name="ComplaintDetails" options={{ href: null }} />
+//         {/* HIDDEN SCREENS */}
+//         <Tabs.Screen name="AddNews" options={{ href: null }} />
+//         <Tabs.Screen name="EditNews" options={{ href: null }} />
+//         <Tabs.Screen name="NewsDetails" options={{ href: null }} />
+//         <Tabs.Screen name="AddEvent" options={{ href: null }} />
+//         <Tabs.Screen name="EditEvent" options={{ href: null }} />
+//         <Tabs.Screen name="EventDetails" options={{ href: null }} />
+//         <Tabs.Screen name="FoldersListScreen" options={{ href: null }} />
+//         {/* GALLERY HIDDEN SCREENS */}
+//         <Tabs.Screen name="AddGalleryPicker" options={{ href: null }} />
+//         <Tabs.Screen
+//           name="EditCropImages"
+//           options={{
+//             href: null,
+//             headerStyle: {
+//               height: 30,
+//             },
+//           }}
+//         />
+//         <Tabs.Screen name="CreateGalleryReview" options={{ href: null }} />
+//         <Tabs.Screen name="GalleryDetail" options={{ href: null }} />
+//         <Tabs.Screen name="GalleryView" options={{ href: null }} />
+//         <Tabs.Screen name="FolderView" options={{ href: null }} />
+//         <Tabs.Screen name="FolderSelector" options={{ href: null }} />
+//       </Tabs>
+//     </GestureHandlerRootView>
+//   );
+// }
 
 import ProfileTabIcon from "@/componenets/Shared/ProfileTabIcon";
 import { useAuth } from "@/contexts/AuthContext";
@@ -19,7 +133,8 @@ export default function MonitorTabs() {
           tabBarInactiveTintColor: Colors.Gray,
         }}
       >
-        {/* MAIN TABS */}
+        {/* ✅ ONLY REAL TABS */}
+
         <Tabs.Screen
           name="Dashboard"
           options={{
@@ -29,6 +144,7 @@ export default function MonitorTabs() {
             ),
           }}
         />
+
         <Tabs.Screen
           name="NewsList"
           options={{
@@ -38,15 +154,7 @@ export default function MonitorTabs() {
             ),
           }}
         />
-        <Tabs.Screen
-          name="EventList"
-          options={{
-            title: "Events",
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="calendar-outline" size={size} color={color} />
-            ),
-          }}
-        />
+
         <Tabs.Screen
           name="Gallery"
           options={{
@@ -56,59 +164,67 @@ export default function MonitorTabs() {
             ),
           }}
         />
+
+        <Tabs.Screen
+          name="ManageVideos"
+          options={{
+            title: "Videos",
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="videocam-outline" size={size} color={color} />
+            ),
+          }}
+        />
+
+        <Tabs.Screen
+          name="EventList"
+          options={{
+            title: "Events",
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="calendar-outline" size={size} color={color} />
+            ),
+          }}
+        />
+
         <Tabs.Screen
           name="Monitor"
           options={{
-            title: "Monitor",
+            title: "Profile",
             tabBarIcon: ({ color, size, focused }) => (
               <ProfileTabIcon
-                color={color}
-                size={size}
-                focused={focused}
                 imageUrl={user?.profileImage}
+                size={size}
+                color={color}
+                focused={focused}
               />
             ),
           }}
         />
-        <Tabs.Screen
-          name="Complaints"
-          options={{
-            title: "Complaints",
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="chatbubbles-outline" color={color} size={size} />
-            ),
-          }}
-        />
 
-        <Tabs.Screen name="ManageVideos" options={{ title: "Videos" }} />
-        <Tabs.Screen name="AddVideo" options={{ title: "Add Video" }} />
+        {/* ❌ HIDDEN SCREENS (VERY IMPORTANT) */}
 
-        {/* Hidden screens */}
+        <Tabs.Screen name="Complaints" options={{ href: null }} />
+        <Tabs.Screen name="Polls" options={{ href: null }} />
+        <Tabs.Screen name="AddVideo" options={{ href: null }} />
         <Tabs.Screen name="ComplaintDetails" options={{ href: null }} />
-        {/* HIDDEN SCREENS */}
         <Tabs.Screen name="AddNews" options={{ href: null }} />
         <Tabs.Screen name="EditNews" options={{ href: null }} />
         <Tabs.Screen name="NewsDetails" options={{ href: null }} />
         <Tabs.Screen name="AddEvent" options={{ href: null }} />
         <Tabs.Screen name="EditEvent" options={{ href: null }} />
         <Tabs.Screen name="EventDetails" options={{ href: null }} />
-        <Tabs.Screen name="FoldersListScreen" options={{ href: null }} />
-        {/* GALLERY HIDDEN SCREENS */}
         <Tabs.Screen name="AddGalleryPicker" options={{ href: null }} />
-        <Tabs.Screen
-          name="EditCropImages"
-          options={{
-            href: null,
-            headerStyle: {
-              height: 30,
-            },
-          }}
-        />
+        <Tabs.Screen name="EditCropImages" options={{ href: null }} />
         <Tabs.Screen name="CreateGalleryReview" options={{ href: null }} />
         <Tabs.Screen name="GalleryDetail" options={{ href: null }} />
         <Tabs.Screen name="GalleryView" options={{ href: null }} />
         <Tabs.Screen name="FolderView" options={{ href: null }} />
         <Tabs.Screen name="FolderSelector" options={{ href: null }} />
+        <Tabs.Screen
+          name="components/AttentionCards"
+          options={{ href: null }}
+        />
+        <Tabs.Screen name="components/QuickActions" options={{ href: null }} />
+        <Tabs.Screen name="components/SummaryCards" options={{ href: null }} />
       </Tabs>
     </GestureHandlerRootView>
   );

@@ -1,3 +1,4 @@
+// app/(admin)/content/EventContent.tsx
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
@@ -32,8 +33,13 @@ const { width } = Dimensions.get("window");
 
 export default function AdminEventContent({
   monitorId,
+  dateRange,
 }: {
   monitorId: string;
+  dateRange?: {
+    from?: Date;
+    to?: Date;
+  };
 }) {
   const router = useRouter();
 
@@ -70,13 +76,30 @@ export default function AdminEventContent({
         ...(d.data() as any),
       }));
 
-      setEvents(arr);
+      let filtered = arr;
+
+      /* DATE RANGE FILTER (OPTIONAL) */
+      if (dateRange?.from || dateRange?.to) {
+        filtered = arr.filter((item) => {
+          const d =
+            item.dateTime?.toDate?.() ?? item.createdAt?.toDate?.() ?? null;
+
+          if (!d) return false;
+
+          if (dateRange.from && d < dateRange.from) return false;
+          if (dateRange.to && d > dateRange.to) return false;
+
+          return true;
+        });
+      }
+
+      setEvents(filtered);
       setLoading(false);
       setRefreshing(false);
     });
 
     return unsub;
-  }, [monitorId]);
+  }, [monitorId, dateRange]);
 
   useEffect(() => {
     const unsub = loadEvents();
@@ -143,14 +166,10 @@ export default function AdminEventContent({
   const renderItem = ({ item }: { item: any }) => {
     const monitor = {
       fullName:
-        item.createdByName ||
-        monitorMap[item.createdBy]?.fullName ||
-        "Unknown",
+        item.createdByName || monitorMap[item.createdBy]?.fullName || "Unknown",
 
       profileImage:
-        item.createdByImage ||
-        monitorMap[item.createdBy]?.profileImage ||
-        null,
+        item.createdByImage || monitorMap[item.createdBy]?.profileImage || null,
     };
 
     return (
@@ -232,7 +251,11 @@ export default function AdminEventContent({
                 onPress={() => handleEdit(item.id)}
                 style={styles.iconButton}
               >
-                <Ionicons name="create-outline" size={24} color={Colors.primary} />
+                <Ionicons
+                  name="create-outline"
+                  size={24}
+                  color={Colors.primary}
+                />
               </TouchableOpacity>
 
               <TouchableOpacity

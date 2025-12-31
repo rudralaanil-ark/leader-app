@@ -1,3 +1,4 @@
+// app/(shared)/NewsDetails.tsx
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";

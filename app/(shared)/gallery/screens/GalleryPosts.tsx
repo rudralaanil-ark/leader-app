@@ -862,12 +862,14 @@
 //   imageCountText: { color: "#fff", fontSize: 12, fontWeight: "600" },
 // });
 
+// (shared)/gallery/components/GalleryPosts.tsx
 import { postsService } from "@/app/services/postsService";
+import { shareService } from "@/app/services/shareService";
 import { db } from "@/configs/FirebaseConfig";
 import { useAuth } from "@/contexts/AuthContext";
 import Colors from "@/data/Colors";
 import { Entypo, Feather, FontAwesome6 } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   collection,
   doc,
@@ -875,8 +877,10 @@ import {
   onSnapshot,
   orderBy,
   query,
+  where,
 } from "firebase/firestore";
 import React, { useEffect, useRef, useState } from "react";
+
 import {
   ActivityIndicator,
   Alert,
@@ -901,6 +905,7 @@ const DEFAULT_IMAGE = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 export default function GalleryPosts() {
   const router = useRouter();
   const { user } = useAuth();
+  const { postId } = useLocalSearchParams<{ postId?: string }>();
 
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -918,6 +923,8 @@ export default function GalleryPosts() {
   const [likedByMe, setLikedByMe] = useState<Record<string, boolean>>({});
 
   const doubleTapRef = useRef<Record<string, number>>({});
+  const listRef = useRef<FlatList<any>>(null);
+
   const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 60 });
   const onViewableItemsChanged = useRef(({ viewableItems, postId }: any) => {
     if (viewableItems?.length > 0) {
@@ -947,6 +954,22 @@ export default function GalleryPosts() {
   };
 
   useEffect(() => {
+    if (!postId || posts.length === 0) return;
+
+    const index = posts.findIndex((p) => p.id === postId);
+    if (index === -1) return;
+
+    // wait until FlatList renders
+    setTimeout(() => {
+      listRef.current?.scrollToIndex({
+        index,
+        animated: true,
+        viewPosition: 0.1,
+      });
+    }, 300);
+  }, [postId, posts]);
+
+  useEffect(() => {
     const loadSettings = async () => {
       const snap = await getDoc(doc(db, "settings", "postIdentity"));
       if (snap.exists()) setDefaultIdentity(snap.data() as any);
@@ -955,7 +978,11 @@ export default function GalleryPosts() {
   }, []);
 
   useEffect(() => {
-    const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+    const q = query(
+      collection(db, "posts"),
+      where("type", "==", "image"),
+      orderBy("createdAt", "desc")
+    );
     const unsubscribe = onSnapshot(q, async (snap) => {
       const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       setPosts(list);
@@ -1037,6 +1064,20 @@ export default function GalleryPosts() {
         await postsService.unlikePost(id, user.uid);
       }
     } catch {}
+  };
+
+  const handleSharePost = async (post: any) => {
+    if (!user) {
+      Alert.alert("Login required", "Please login to share this post");
+      return;
+    }
+
+    await shareService.addShare({
+      postId: post.id,
+      type: "image",
+      text: post.description,
+      user,
+    });
   };
 
   const renderItem = ({ item: post }: any) => {
@@ -1164,9 +1205,10 @@ export default function GalleryPosts() {
           </View>
 
           <View style={{ alignItems: "center", marginRight: 20 }}>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => handleSharePost(post)}>
               <Feather name="send" size={25} color={Colors.textPrimary} />
             </TouchableOpacity>
+
             <Text style={styles.countText}>{post.shareCount ?? 0}</Text>
           </View>
         </View>
@@ -1185,7 +1227,7 @@ export default function GalleryPosts() {
 
   return (
     <View style={{ flex: 1, backgroundColor: Colors.background }}>
-      <FlatList
+      {/* <FlatList
         data={posts}
         keyExtractor={(p) => p.id}
         renderItem={renderItem}
@@ -1197,6 +1239,29 @@ export default function GalleryPosts() {
           />
         }
         contentContainerStyle={{ padding: 12, paddingBottom: 140 }}
+      /> */}
+
+      <FlatList
+        ref={listRef}
+        data={posts}
+        keyExtractor={(p) => p.id}
+        renderItem={renderItem}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={Colors.primary}
+          />
+        }
+        contentContainerStyle={{ padding: 12, paddingBottom: 140 }}
+        onScrollToIndexFailed={(info) => {
+          setTimeout(() => {
+            listRef.current?.scrollToIndex({
+              index: info.index,
+              animated: true,
+            });
+          }, 300);
+        }}
       />
 
       {/* MODALS */}

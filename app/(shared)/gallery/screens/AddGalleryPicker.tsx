@@ -1,3 +1,4 @@
+// app/(shared)/gallery/screens/AddGalleryPicker.tsx
 import Colors from "@/data/Colors";
 import { useRouter } from "expo-router";
 import React, { useEffect } from "react";

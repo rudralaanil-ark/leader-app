@@ -248,7 +248,7 @@ export const uploadImageToCloudinary = async (
   }
 };
 
-const BASE_SERVER_URL = "http://10.54.130.170:8080";
+const BASE_SERVER_URL = "https://leader-app-backend-production.up.railway.app";
 // your backend base URL
 
 export async function requestCloudinaryDeletion(payload: {

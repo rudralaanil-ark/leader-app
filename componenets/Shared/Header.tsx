@@ -1,3 +1,4 @@
+// app/(user)/(tabs)/Home.tsx
 import Colors from "@/data/Colors";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import React, { useState } from "react";
@@ -42,6 +43,15 @@ const Header: React.FC<HeaderProps> = ({
           <Animated.View style={styles.langMenu}>
             <TouchableOpacity
               onPress={() => {
+                onLanguageChange?.("English");
+                setShowLangMenu(false);
+              }}
+            >
+              <Text style={styles.langText}>English</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => {
                 onLanguageChange?.("Telugu");
                 setShowLangMenu(false);
               }}
@@ -62,12 +72,22 @@ const Header: React.FC<HeaderProps> = ({
 
       {/* 🧑 Profile Section */}
       <View style={styles.container}>
-        <Image
-          source={
-            profileImage ? profileImage : require("@/assets/images/profile.png")
-          }
-          style={styles.image}
-        />
+        {/* HERO IMAGE */}
+        <View style={styles.imageWrapper}>
+          <Image
+            source={
+              profileImage
+                ? { uri: profileImage }
+                : require("@/assets/images/profile.png")
+            }
+            style={styles.image}
+          />
+
+          {/* fade overlay */}
+          {/* <View style={styles.imageFade} /> */}
+        </View>
+
+        {/* TEXT */}
         <Text style={styles.name}>{name}</Text>
         <Text style={styles.title}>{title}</Text>
       </View>
@@ -140,22 +160,52 @@ const styles = StyleSheet.create({
     marginTop: 50, // give space for the floating icon
     marginBottom: 10,
   },
+  // image: {
+  //   width: 180,
+  //   height: 180,
+  //   resizeMode: "cover",
+  //   alignSelf: "center",
+  //   marginTop: 10,
+  // },
+
+  imageWrapper: {
+    width: "90%",
+    aspectRatio: 16 / 9, // 🔥 banner look
+    borderRadius: 18,
+    overflow: "hidden",
+    marginTop: 20,
+    alignSelf: "center",
+  },
+
   image: {
-    width: 150,
-    height: 150,
-    borderRadius: 100,
-    borderWidth: 2.5,
-    borderColor: Colors.homeProfileBorder,
-    marginTop: 10,
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
   },
+
+  // name: {
+  //   marginTop: 10,
+  //   fontSize: 25,
+  //   fontWeight: "bold",
+  //   color: Colors.textWhite,
+  // },
+  // title: {
+  //   fontSize: 16,
+  //   color: Colors.textWhite,
+  // },
+
   name: {
-    marginTop: 10,
-    fontSize: 25,
-    fontWeight: "bold",
+    // marginTop: 14,
+    fontSize: 26,
+    fontWeight: "700",
     color: Colors.textWhite,
+    textAlign: "center",
   },
+
   title: {
+    marginTop: 2,
     fontSize: 16,
     color: Colors.textWhite,
+    textAlign: "center",
   },
 });

@@ -61,8 +61,7 @@
 //   updatedAt: Timestamp;
 // }
 
-//app\utils\types.ts
-
+// app/utils/types.ts
 import { Timestamp } from "firebase/firestore";
 
 export interface PostMedia {
@@ -70,6 +69,7 @@ export interface PostMedia {
   publicId: string;
   order: number;
   type: "image" | "video";
+  s3Key?: string;
   thumbnailUrl?: string | null;
 }
 
