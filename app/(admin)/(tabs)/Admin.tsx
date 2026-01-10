@@ -507,6 +507,12 @@ export default function Admin() {
           label="Complaints"
           onPress={() => router.push("/(admin)/(tabs)/Complaints")}
         />
+
+        <AdminAction
+          icon="person-circle-outline"
+          label="Leader Profile"
+          onPress={() => router.push("/(admin)/(tabs)/LeaderProfileManager")}
+        />
       </View>
 
       {/* SETTINGS */}

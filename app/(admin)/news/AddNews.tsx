@@ -1,8 +1,214 @@
+// // app/(admin)/news/AddNews.tsx
+// import { createNews } from "@/app/(monitor)/(tabs)/api/news";
+// import { uploadImageToCloudinary } from "@/app/api/uploadImage";
+// import Ionicons from "@expo/vector-icons/Ionicons";
+// import * as ImagePicker from "expo-image-picker";
+// import { useRouter } from "expo-router";
+// import { getAuth } from "firebase/auth";
+// import React, { useState } from "react";
+// import {
+//   ActivityIndicator,
+//   Image,
+//   ScrollView,
+//   StyleSheet,
+//   Text,
+//   TextInput,
+//   ToastAndroid,
+//   TouchableOpacity,
+//   View,
+// } from "react-native";
+// import { SafeAreaView } from "react-native-safe-area-context";
+
+// export default function AdminAddNews() {
+//   const router = useRouter();
+//   const auth = getAuth();
+//   const user = auth.currentUser;
+
+//   const [title, setTitle] = useState("");
+//   const [description, setDescription] = useState("");
+//   const [imageUri, setImageUri] = useState<string | null>(null);
+//   const [loading, setLoading] = useState(false);
+
+//   const pickImage = async () => {
+//     const res = await ImagePicker.launchImageLibraryAsync({
+//       mediaTypes: ImagePicker.MediaTypeOptions.Images,
+//       allowsEditing: true,
+//       quality: 0.7,
+//     });
+//     if (!res.canceled) setImageUri(res.assets[0].uri);
+//   };
+
+//   const onSave = async () => {
+//     console.log("🟡 STEP 0: onSave pressed");
+//     if (!title || !description) {
+//       ToastAndroid.show("Please fill all fields", ToastAndroid.BOTTOM);
+//       return;
+//     }
+
+//     if (!user) {
+//       ToastAndroid.show("Login expired", ToastAndroid.BOTTOM);
+//       return;
+//     }
+
+//     console.log("🟡 STEP 1: validations passed");
+//     console.log("🟡 USER UID:", user?.uid);
+
+//     try {
+//       setLoading(true);
+
+//       console.log("🟡 STEP 2: imageUri value:", imageUri);
+
+//       let imageUrl = imageUri;
+//       if (imageUri?.startsWith("file:")) {
+//         imageUrl = await uploadImageToCloudinary(imageUri);
+//       }
+
+//       console.log("🟡 STEP 3: imageUrl after upload:", imageUrl);
+
+//       console.log("🟡 STEP 4: calling createNews with payload", {
+//         title,
+//         description,
+//         imageUrl: imageUrl || null,
+//         createdBy: user.uid,
+//       });
+
+//       await createNews(
+//         {
+//           title,
+//           description,
+//           imageUrl: imageUrl || null,
+//         },
+//         user.uid // createdBy (admin)
+//       );
+
+//       console.log("🟢 STEP 5: createNews completed successfully");
+
+//       ToastAndroid.show("News created!", ToastAndroid.BOTTOM);
+//       router.back();
+//     } catch (e) {
+//       console.log(e);
+//       console.log("CREATE NEWS ERROR:", e?.message, e);
+//       ToastAndroid.show("Error creating news", ToastAndroid.BOTTOM);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   return (
+//     <SafeAreaView style={styles.safeArea}>
+//       <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+//         <Ionicons name="arrow-back" size={28} color="#000" />
+//       </TouchableOpacity>
+
+//       <Text style={styles.header}>📰 Create News</Text>
+
+//       <ScrollView contentContainerStyle={styles.scroll}>
+//         <View style={styles.card}>
+//           <TextInput
+//             placeholder="Enter title..."
+//             style={styles.input}
+//             value={title}
+//             onChangeText={setTitle}
+//           />
+
+//           <TextInput
+//             placeholder="Write description..."
+//             style={[styles.input, { height: 120 }]}
+//             value={description}
+//             multiline
+//             onChangeText={setDescription}
+//           />
+
+//           {imageUri ? (
+//             <TouchableOpacity onPress={pickImage}>
+//               <Image source={{ uri: imageUri }} style={styles.image} />
+//             </TouchableOpacity>
+//           ) : (
+//             <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
+//               <Ionicons name="image-outline" size={30} color="#666" />
+//               <Text style={{ marginLeft: 10 }}>Pick Image</Text>
+//             </TouchableOpacity>
+//           )}
+
+//           <TouchableOpacity style={styles.saveBtn} onPress={onSave}>
+//             {loading ? (
+//               <ActivityIndicator color="#fff" />
+//             ) : (
+//               <Text style={styles.saveText}>Create</Text>
+//             )}
+//           </TouchableOpacity>
+//         </View>
+//       </ScrollView>
+//     </SafeAreaView>
+//   );
+// }
+
+// const styles = StyleSheet.create({
+//   safeArea: { flex: 1, backgroundColor: "#f6f7fb" },
+//   backBtn: {
+//     position: "absolute",
+//     top: 50,
+//     left: 20,
+//     zIndex: 10,
+//     backgroundColor: "#fff",
+//     padding: 8,
+//     borderRadius: 25,
+//     elevation: 3,
+//   },
+//   header: {
+//     fontSize: 22,
+//     fontWeight: "700",
+//     marginTop: 60,
+//     textAlign: "center",
+//   },
+//   scroll: { padding: 16 },
+//   card: {
+//     backgroundColor: "#fff",
+//     padding: 16,
+//     borderRadius: 14,
+//     elevation: 3,
+//   },
+//   input: {
+//     backgroundColor: "#fff",
+//     borderWidth: 1,
+//     borderColor: "#ccc",
+//     padding: 12,
+//     borderRadius: 10,
+//     marginBottom: 14,
+//   },
+//   imagePicker: {
+//     borderWidth: 1,
+//     borderColor: "#ddd",
+//     padding: 12,
+//     alignItems: "center",
+//     borderRadius: 10,
+//     flexDirection: "row",
+//     justifyContent: "center",
+//   },
+//   image: {
+//     width: "100%",
+//     height: 220,
+//     borderRadius: 10,
+//     marginTop: 10,
+//   },
+//   saveBtn: {
+//     backgroundColor: "#007AFF",
+//     padding: 16,
+//     marginTop: 20,
+//     borderRadius: 12,
+//     alignItems: "center",
+//   },
+//   saveText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+// });
+
 // app/(admin)/news/AddNews.tsx
 import { uploadImageToCloudinary } from "@/app/api/uploadImage";
+import { createNews } from "@/app/services/news";
+import { useAuth } from "@/contexts/AuthContext";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
+
 import React, { useState } from "react";
 import {
   ActivityIndicator,
@@ -16,13 +222,10 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { createNews } from "@/app/(monitor)/(tabs)/api/news";
-import { getAuth } from "firebase/auth";
 
 export default function AdminAddNews() {
   const router = useRouter();
-  const auth = getAuth();
-  const user = auth.currentUser;
+  const { user } = useAuth(); // ✅ Firestore user (correct source)
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -39,6 +242,8 @@ export default function AdminAddNews() {
   };
 
   const onSave = async () => {
+    console.log("🟡 STEP 0: onSave pressed");
+
     if (!title || !description) {
       ToastAndroid.show("Please fill all fields", ToastAndroid.BOTTOM);
       return;
@@ -49,27 +254,49 @@ export default function AdminAddNews() {
       return;
     }
 
+    console.log("🟡 STEP 1: validations passed");
+    console.log("🟡 USER:", user);
+
     try {
       setLoading(true);
 
-      let imageUrl = imageUri;
+      console.log("🟡 STEP 2: imageUri value:", imageUri);
+
+      let imageUrl: string | null = imageUri;
+
       if (imageUri?.startsWith("file:")) {
-        imageUrl = await uploadImageToCloudinary(imageUri);
+        const uploadResult: any = await uploadImageToCloudinary(imageUri);
+
+        // ✅ Ensure imageUrl is always a STRING
+        imageUrl =
+          typeof uploadResult === "string"
+            ? uploadResult
+            : uploadResult?.url || null;
       }
+
+      console.log("🟡 STEP 3: imageUrl after upload:", imageUrl);
+
+      console.log("🟡 STEP 4: calling createNews");
 
       await createNews(
         {
           title,
           description,
-          imageUrl: imageUrl || null,
+          imageUrl,
         },
-        user.uid // createdBy (admin)
+        {
+          uid: user.uid,
+          fullName: user.fullName, // ✅ NAME
+          role: user.role, // ✅ ROLE
+        }
       );
+
+      console.log("🟢 STEP 5: createNews completed successfully");
 
       ToastAndroid.show("News created!", ToastAndroid.BOTTOM);
       router.back();
-    } catch (e) {
-      console.log(e);
+    } catch (e: any) {
+      console.log("CREATE NEWS ERROR:", e);
       ToastAndroid.show("Error creating news", ToastAndroid.BOTTOM);
     } finally {
       setLoading(false);
@@ -124,6 +351,8 @@ export default function AdminAddNews() {
     </SafeAreaView>
   );
 }
+
+/* ---------------- STYLES ---------------- */
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: "#f6f7fb" },

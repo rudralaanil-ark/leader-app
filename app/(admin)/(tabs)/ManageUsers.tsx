@@ -5,6 +5,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { collection, doc, onSnapshot, updateDoc } from "firebase/firestore";
 import React, { useEffect, useMemo, useState } from "react";
 
+import { getProfileImageUrl } from "@/app/utils/profileImage";
+
 import {
   FlatList,
   Image,
@@ -108,7 +110,7 @@ export default function ManageUsers() {
         onPress={() => openUserModal(item)}
       >
         {/* Avatar */}
-        {item.profileImage ? (
+        {/* {item.profileImage ? (
           <Image source={{ uri: item.profileImage }} style={styles.avatar} />
         ) : (
           <View style={styles.avatarPlaceholder}>
@@ -116,7 +118,26 @@ export default function ManageUsers() {
               {(item.fullName || "U").charAt(0)}
             </Text>
           </View>
-        )}
+        )} */}
+
+        {/* Avatar */}
+        {(() => {
+          const avatarUrl = getProfileImageUrl(item.profileImage);
+
+          return avatarUrl ? (
+            <Image
+              source={{ uri: avatarUrl }}
+              style={styles.avatar}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Text style={styles.avatarLetter}>
+                {(item.fullName || "U").charAt(0)}
+              </Text>
+            </View>
+          );
+        })()}
 
         {/* Info */}
         <View style={styles.infoColumn}>
@@ -234,7 +255,7 @@ export default function ManageUsers() {
             {selectedUser && (
               <>
                 {/* Avatar */}
-                {selectedUser.profileImage ? (
+                {/* {selectedUser.profileImage ? (
                   <Image
                     source={{ uri: selectedUser.profileImage }}
                     style={styles.modalAvatar}
@@ -247,7 +268,33 @@ export default function ManageUsers() {
                       {(selectedUser.fullName || "U").charAt(0)}
                     </Text>
                   </View>
-                )}
+                )} */}
+
+                {/* Avatar */}
+                {(() => {
+                  const avatarUrl = getProfileImageUrl(
+                    selectedUser.profileImage
+                  );
+
+                  return avatarUrl ? (
+                    <Image
+                      source={{ uri: avatarUrl }}
+                      style={styles.modalAvatar}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View
+                      style={[
+                        styles.modalAvatar,
+                        styles.modalAvatarPlaceholder,
+                      ]}
+                    >
+                      <Text style={styles.modalAvatarLetter}>
+                        {(selectedUser.fullName || "U").charAt(0)}
+                      </Text>
+                    </View>
+                  );
+                })()}
 
                 <Text style={styles.modalName}>{selectedUser.fullName}</Text>
                 <Text style={styles.modalEmail}>{selectedUser.email}</Text>

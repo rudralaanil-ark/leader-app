@@ -1,3 +1,32 @@
+// {
+//   "cli": {
+//     "version": ">= 16.27.0",
+//     "appVersionSource": "remote"
+//   },
+//   "build": {
+//     "development": {
+//       "developmentClient": true,
+//       "distribution": "internal"
+//     },
+//     "preview": {
+//       "distribution": "internal"
+//     },
+//     "androidStandalone": {
+//       "android": {
+//         "buildType": "apk"
+//       },
+//       "developmentClient": false,
+//       "distribution": "internal"
+//     },
+//     "production": {
+//       "autoIncrement": true
+//     }
+//   },
+//   "submit": {
+//     "production": {}
+//   }
+// }
+
 {
   "cli": {
     "version": ">= 16.27.0",
@@ -5,13 +34,22 @@
   },
   "build": {
     "development": {
-      "developmentClient": false, // set to true if you want to use with dev client, this is previously set to true in the dev mode.
+      "developmentClient": true,
       "distribution": "internal"
     },
+
     "preview": {
+      "android": {
+        "buildType": "apk"
+      },
       "distribution": "internal"
     },
+
     "production": {
+      "android": {
+        "buildType": "apk"
+      },
+      "distribution": "internal",
       "autoIncrement": true
     }
   },

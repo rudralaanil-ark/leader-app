@@ -1,5 +1,6 @@
-import { createEvent, updateEvent } from "@/app/(monitor)/(tabs)/api/events";
+// app/(admin)/events/AddEvent.tsx
 import { uploadImageToCloudinary } from "@/app/api/uploadImage";
+import { createEvent, updateEvent } from "@/app/services/events";
 import { db } from "@/configs/FirebaseConfig";
 import Colors from "@/data/Colors";
 import Ionicons from "@expo/vector-icons/Ionicons";

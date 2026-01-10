@@ -875,6 +875,7 @@
 // });
 
 // (shared)/gallery/components/CommentsPopup.tsx
+import { getProfileImageUrl } from "@/app/utils/profileImage";
 import { useAuth } from "@/contexts/AuthContext";
 import Colors from "@/data/Colors";
 import React, { useEffect, useRef, useState } from "react";
@@ -1076,14 +1077,23 @@ export default function CommentsPopup({ postId, onClose }: any) {
             renderItem={({ item }) => {
               const showRole = item.role === "admin" || item.role === "monitor";
 
+              const avatarUrl = getProfileImageUrl(item.profileImage);
+
               return (
                 <View style={styles.commentRow}>
-                  <Image
-                    source={
-                      item.profileImage ? { uri: item.profileImage } : undefined
-                    }
-                    style={styles.avatar}
-                  />
+                  {avatarUrl ? (
+                    <Image
+                      source={{ uri: avatarUrl }}
+                      style={styles.avatar}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={styles.avatarPlaceholder}>
+                      <Text style={styles.avatarLetter}>
+                        {(item.name || "U").charAt(0)}
+                      </Text>
+                    </View>
+                  )}
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
                       <Text style={styles.name}>{item.name}</Text>
@@ -1224,5 +1234,19 @@ const styles = StyleSheet.create({
   sendText: {
     color: "#fff",
     fontWeight: "600",
+  },
+  avatarPlaceholder: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
+    backgroundColor: Colors.surfaceDark,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  avatarLetter: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: Colors.textInverse,
   },
 });

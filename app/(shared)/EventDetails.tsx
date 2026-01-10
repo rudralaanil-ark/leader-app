@@ -25,7 +25,7 @@ import {
   getEvent,
   getInterestedUsers,
   listenInterestedCount,
-} from "../(monitor)/(tabs)/api/events";
+} from "../services/events";
 
 if (
   Platform.OS === "android" &&

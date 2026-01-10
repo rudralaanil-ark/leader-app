@@ -296,7 +296,7 @@ export default function AdminEventContent({
       <TouchableOpacity
         style={styles.fab}
         activeOpacity={0.9}
-        onPress={() => router.push("/(admin)/events/AddEvent")}
+        onPress={() => router.push("/(shared)/events/components/AddEvent")}
       >
         <Ionicons name="add" size={34} color="#fff" />
       </TouchableOpacity>

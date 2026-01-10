@@ -16,7 +16,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { getNews } from "../(monitor)/(tabs)/api/news";
+import { getNews } from "../services/news";
 
 const { width } = Dimensions.get("window");
 

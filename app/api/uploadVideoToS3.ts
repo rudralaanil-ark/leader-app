@@ -57,23 +57,75 @@
 
 // app/api/uploadVideoToS3.ts
 
+// const BASE_SERVER_URL = "https://leader-app-backend-production.up.railway.app";
+
+// async function uriToBlob(uri: string): Promise<Blob> {
+//   const response = await fetch(uri);
+//   return await response.blob();
+// }
+
+// export async function uploadVideoToS3(params: {
+//   localUri: string;
+//   userId: string;
+//   postId: string;
+// }) {
+//   const { localUri, userId, postId } = params;
+
+//   const key = `videos/${userId}/${postId}.mp4`;
+
+//   // 1️⃣ Get presigned URL
+//   const presignRes = await fetch(
+//     `${BASE_SERVER_URL}/api/media/presign?fileName=${encodeURIComponent(key)}`,
+//     { method: "POST" }
+//   );
+
+//   if (!presignRes.ok) {
+//     throw new Error("Failed to get presigned URL");
+//   }
+
+//   const { uploadUrl, fileUrl } = await presignRes.json();
+
+//   // 2️⃣ Convert file → Blob
+//   const videoBlob = await uriToBlob(localUri);
+
+//   // 3️⃣ Upload using PUT (AWS recommended)
+//   const uploadRes = await fetch(uploadUrl, {
+//     method: "PUT",
+//     body: videoBlob,
+//   });
+
+//   if (!uploadRes.ok) {
+//     throw new Error("S3 upload failed");
+//   }
+
+//   return {
+//     videoUrl: fileUrl,
+//     key,
+//   };
+// }
+
+import * as FileSystem from "expo-file-system/legacy";
+
 const BASE_SERVER_URL = "https://leader-app-backend-production.up.railway.app";
 
-async function uriToBlob(uri: string): Promise<Blob> {
-  const response = await fetch(uri);
-  return await response.blob();
-}
+// ❌ keeping blob method commented (not removed)
+// async function uriToBlob(uri: string): Promise<Blob> {
+//   const response = await fetch(uri);
+//   return await response.blob();
+// }
 
 export async function uploadVideoToS3(params: {
   localUri: string;
   userId: string;
   postId: string;
+  onProgress?: (p: number) => void;
+  onTask?: (task: any) => void;
 }) {
-  const { localUri, userId, postId } = params;
+  const { localUri, userId, postId, onProgress, onTask } = params;
 
   const key = `videos/${userId}/${postId}.mp4`;
 
-  // 1️⃣ Get presigned URL
+  // 1️⃣ Presign URL
   const presignRes = await fetch(
     `${BASE_SERVER_URL}/api/media/presign?fileName=${encodeURIComponent(key)}`,
     { method: "POST" }
@@ -85,16 +137,29 @@ export async function uploadVideoToS3(params: {
 
   const { uploadUrl, fileUrl } = await presignRes.json();
 
-  // 2️⃣ Convert file → Blob
-  const videoBlob = await uriToBlob(localUri);
+  // 2️⃣ Create upload task (LEGACY API – REQUIRED)
+  const uploadTask = FileSystem.createUploadTask(
+    uploadUrl,
+    localUri,
+    {
+      httpMethod: "PUT",
+    },
+    (data) => {
+      if (data.totalBytesExpectedToSend && data.totalBytesExpectedToSend > 0) {
+        const percent = Math.round(
+          (data.totalBytesSent / data.totalBytesExpectedToSend) * 100
+        );
+        onProgress?.(percent);
+      }
+    }
+  );
 
-  // 3️⃣ Upload using PUT (AWS recommended)
-  const uploadRes = await fetch(uploadUrl, {
-    method: "PUT",
-    body: videoBlob,
-  });
+  // expose task for cancel
+  onTask?.(uploadTask);
 
-  if (!uploadRes.ok) {
+  const result = await uploadTask.uploadAsync();
+
+  if (result.status !== 200) {
     throw new Error("S3 upload failed");
   }
 

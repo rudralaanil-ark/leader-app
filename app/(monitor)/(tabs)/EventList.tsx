@@ -17,7 +17,7 @@ import {
   deleteEvent,
   listenInterestedCount,
   listenToEvents,
-} from "./api/events";
+} from "../../services/events";
 
 type EventItem = any;
 
@@ -109,7 +109,7 @@ export default function EventList() {
         style={styles.fab}
         onPress={() =>
           router.push({
-            pathname: "./AddEvent",
+            pathname: "/(shared)/events/components/AddEvent",
             params: {}, // ensure empty/new
           })
         }

@@ -1103,6 +1103,861 @@
 //   },
 // });
 
+// // app/(shared)/video/ManageVideos.tsx
+// import { useIsFocused } from "@react-navigation/native";
+// import { useRouter } from "expo-router";
+// import React, { useEffect, useState } from "react";
+
+// import {
+//   Alert,
+//   FlatList,
+//   Modal,
+//   StatusBar,
+//   StyleSheet,
+//   Text,
+//   TextInput,
+//   TouchableOpacity,
+//   View,
+// } from "react-native";
+// import {
+//   SafeAreaView,
+//   useSafeAreaInsets,
+// } from "react-native-safe-area-context";
+
+// import { deleteVideoFromS3 } from "@/app/api/deleteVideoFromS3";
+// import { postsService } from "@/app/services/postsService";
+// import { useAuth } from "@/contexts/AuthContext";
+
+// import CommentsPopup from "../gallery/components/CommentsPopup";
+// import LikedUsersModal from "../gallery/components/LikedUsersModal";
+// import ShareUsersModal from "../gallery/components/ShareUsersModal";
+// import { ManageVideoCard } from "./components/ManageVideoCard";
+
+// const FALLBACK_THUMBNAIL = "https://dummyimage.com/600x400/000/fff&text=Video";
+// const FALLBACK_AVATAR = "https://dummyimage.com/100x100/cccccc/000&text=U";
+
+// export default function ManageVideos() {
+//   const { user } = useAuth();
+//   const role = user?.role ?? "user";
+
+//   const [videos, setVideos] = useState<any[]>([]);
+//   const [activeIndex, setActiveIndex] = useState(0);
+//   const [previewFor, setPreviewFor] = useState<string | null>(null);
+
+//   const [likesFor, setLikesFor] = useState<string | null>(null);
+//   const [commentsFor, setCommentsFor] = useState<string | null>(null);
+//   const [sharesFor, setSharesFor] = useState<string | null>(null);
+
+//   const [editPost, setEditPost] = useState<any | null>(null);
+//   const [editText, setEditText] = useState("");
+
+//   const insets = useSafeAreaInsets();
+//   const isFocused = useIsFocused();
+//   const router = useRouter();
+
+//   /* ================= FETCH VIDEOS ================= */
+
+//   useEffect(() => {
+//     return postsService.subscribeToPostType("video", (list) => {
+//       if (role === "admin") {
+//         setVideos(list);
+//       } else {
+//         setVideos(list.filter((v) => v.ownerId === user?.uid));
+//       }
+//     });
+//   }, [role, user?.uid]);
+
+//   /* ================= DELETE VIDEO ================= */
+
+//   // const deleteVideo = (post: any) => {
+//   //   Alert.alert(
+//   //     "Delete Video",
+//   //     "This will permanently delete the video. Continue?",
+//   //     [
+//   //       { text: "Cancel", style: "cancel" },
+//   //       {
+//   //         text: "Delete",
+//   //         style: "destructive",
+//   //         onPress: async () => {
+//   //           try {
+//   //             // 1️⃣ Delete from S3
+//   //             const s3Key = post.media?.[0]?.s3Key;
+//   //             if (s3Key) {
+//   //               await deleteVideoFromS3(s3Key);
+//   //             }
+
+//   //             // 2️⃣ 🔥 DELETE LOCAL VIDEO CACHE (IMPORTANT)
+//   //             await FileSystem.deleteAsync(
+//   //               FileSystem.documentDirectory +
+//   //                 "video-cache/" +
+//   //                 post.id +
+//   //                 ".mp4",
+//   //               { idempotent: true }
+//   //             );
+
+//   //             // 3️⃣ Delete Firestore post
+//   //             await postsService.deletePost(post.id);
+//   //           } catch (e: any) {
+//   //             Alert.alert(
+//   //               "Delete failed",
+//   //               e?.message ?? "Unable to delete video"
+//   //             );
+//   //           }
+//   //         },
+//   //       },
+//   //     ]
+//   //   );
+//   // };
+
+//   const deleteVideo = (post: any) => {
+//     Alert.alert(
+//       "Delete Video",
+//       "This will permanently delete the video. Continue?",
+//       [
+//         { text: "Cancel", style: "cancel" },
+//         {
+//           text: "Delete",
+//           style: "destructive",
+//           onPress: async () => {
+//             try {
+//               console.log("🟡 DELETE START");
+//               console.log("Post ID:", post.id);
+//               console.log("Owner ID:", post.ownerId);
+//               console.log("Current user:", user?.uid);
+//               console.log("Role:", user?.role);
+
+//               // 1️⃣ Firestore delete
+//               console.log("🟡 Deleting Firestore post...");
+//               await postsService.deletePost(post.id);
+//               console.log("🟢 Firestore delete DONE");
+
+//               // 2️⃣ S3 delete
+//               const s3Key = post.media?.[0]?.s3Key;
+//               console.log("🟡 Deleting S3:", s3Key);
+//               if (s3Key) {
+//                 await deleteVideoFromS3(s3Key);
+//               }
+//               console.log("🟢 S3 delete DONE");
+//             } catch (e: any) {
+//               console.error("🔴 DELETE FAILED:", e);
+//               Alert.alert(
+//                 "Delete failed",
+//                 e?.message ?? "Unable to delete video"
+//               );
+//             }
+//           },
+//         },
+//       ]
+//     );
+//   };
+
+//   /* ================= EDIT ================= */
+
+//   const saveEdit = async () => {
+//     if (!editPost) return;
+//     await postsService.updatePost(editPost.id, { title: editText });
+//     setEditPost(null);
+//   };
+
+//   /* ================= TIME ================= */
+
+//   const formatTime = (ts: any) => {
+//     if (!ts?.seconds) return "Just now";
+//     const diff = Date.now() - ts.seconds * 1000;
+//     const m = Math.floor(diff / 60000);
+//     if (m < 60) return `${m}m ago`;
+//     const h = Math.floor(m / 60);
+//     if (h < 24) return `${h}h ago`;
+//     return `${Math.floor(h / 24)}d ago`;
+//   };
+
+//   /* ================= PERMISSION ================= */
+
+//   if (role !== "admin" && role !== "monitor") {
+//     return (
+//       <SafeAreaView style={styles.denied}>
+//         <Text style={styles.deniedText}>
+//           You are not allowed to manage videos
+//         </Text>
+//       </SafeAreaView>
+//     );
+//   }
+
+//   /* ================= RENDER ITEM ================= */
+
+//   // const renderItem = ({ item, index }: any) => {
+//   //   const shouldPreload = Math.abs(index - activeIndex) <= 1;
+//   //   const isPlaying = previewFor === item.id && isFocused;
+//   //   const thumbnail = item.media?.[0]?.thumbnailUrl ?? FALLBACK_THUMBNAIL;
+
+//   //   const [localUri, setLocalUri] = useState<string | null>(null);
+
+//   //   useEffect(() => {
+//   //     let alive = true;
+//   //     if (!isPlaying || !item.id || !item.media?.[0]?.url) return;
+
+//   //     videoCacheService
+//   //       .getCachedVideo(item.id, item.media[0].url)
+//   //       .then((path) => alive && setLocalUri(path))
+//   //       .catch(() => {});
+
+//   //     return () => {
+//   //       alive = false;
+//   //     };
+//   //   }, [isPlaying]);
+
+//   //   return (
+//   //     <View style={styles.card}>
+//   //       {/* OWNER */}
+//   //       <View style={styles.ownerRow}>
+//   //         <Image
+//   //           source={{ uri: item.ownerProfileImage ?? FALLBACK_AVATAR }}
+//   //           style={styles.avatar}
+//   //         />
+//   //         <View style={{ flex: 1 }}>
+//   //           <Text style={styles.ownerName}>{item.ownerName}</Text>
+//   //           <Text style={styles.ownerMeta}>
+//   //             {item.ownerRole} · {formatTime(item.createdAt)}
+//   //           </Text>
+//   //         </View>
+
+//   //         <TouchableOpacity
+//   //           onPress={() => {
+//   //             setEditPost(item);
+//   //             setEditText(item.title ?? "");
+//   //           }}
+//   //         >
+//   //           <Ionicons name="pencil" size={20} color="#2563EB" />
+//   //         </TouchableOpacity>
+//   //       </View>
+
+//   //       {/* VIDEO */}
+//   //       <View style={styles.video}>
+//   //         <Image
+//   //           source={{ uri: thumbnail }}
+//   //           style={StyleSheet.absoluteFill}
+//   //           resizeMode="cover"
+//   //         />
+
+//   //         {shouldPreload && (
+//   //           <Video
+//   //             source={{
+//   //               uri: localUri || item.media?.[0]?.url,
+//   //             }}
+//   //             style={StyleSheet.absoluteFill}
+//   //             resizeMode="cover"
+//   //             paused={!isPlaying}
+//   //           />
+//   //         )}
+
+//   //         {!isPlaying && (
+//   //           <Pressable
+//   //             style={styles.playOverlay}
+//   //             onPress={() => setPreviewFor(item.id)}
+//   //           >
+//   //             <Ionicons name="play-circle" size={64} color="#ffffffcc" />
+//   //           </Pressable>
+//   //         )}
+//   //       </View>
+
+//   //       <Text style={styles.title}>{item.title ?? "Untitled Video"}</Text>
+
+//   //       {/* STATS */}
+//   //       <View style={styles.statsRow}>
+//   //         <Stat
+//   //           label="Likes"
+//   //           value={item.likeCount ?? 0}
+//   //           onPress={() => setLikesFor(item.id)}
+//   //         />
+//   //         <Stat
+//   //           label="Comments"
+//   //           value={item.commentCount ?? 0}
+//   //           onPress={() => setCommentsFor(item.id)}
+//   //         />
+//   //         <Stat
+//   //           label="Shares"
+//   //           value={item.shareCount ?? 0}
+//   //           onPress={() => setSharesFor(item.id)}
+//   //         />
+//   //       </View>
+
+//   //       {/* ACTIONS */}
+//   //       <View style={styles.actionsRow}>
+//   //         <TouchableOpacity onPress={() => deleteVideo(item)}>
+//   //           <Ionicons name="trash-outline" size={22} color="#DC2626" />
+//   //         </TouchableOpacity>
+//   //       </View>
+//   //     </View>
+//   //   );
+//   // };
+
+//   const renderItem = ({ item, index }: any) => (
+//     <ManageVideoCard
+//       item={item}
+//       index={index}
+//       activeIndex={activeIndex}
+//       isFocused={isFocused}
+//       onDelete={deleteVideo}
+//       onEdit={(post: any) => {
+//         setEditPost(post);
+//         setEditText(post.title ?? "");
+//       }}
+//       onLikes={() => setLikesFor(item.id)}
+//       onComments={() => setCommentsFor(item.id)}
+//       onShares={() => setSharesFor(item.id)}
+//     />
+//   );
+
+//   /* ================= UI ================= */
+
+//   return (
+//     <SafeAreaView style={styles.safe}>
+//       <StatusBar barStyle="dark-content" />
+//       <Text style={styles.screenTitle}>Manage Videos</Text>
+
+//       <FlatList
+//         data={videos}
+//         keyExtractor={(item) => item.id}
+//         renderItem={renderItem}
+//         showsVerticalScrollIndicator={false}
+//         onViewableItemsChanged={({ viewableItems }) => {
+//           if (viewableItems?.length) {
+//             setActiveIndex(viewableItems[0].index ?? 0);
+//           }
+//         }}
+//       />
+
+//       {/* EDIT MODAL */}
+//       <Modal visible={!!editPost} transparent animationType="fade">
+//         <View style={styles.modalOverlay}>
+//           <View style={styles.modal}>
+//             <Text style={styles.modalTitle}>Edit Description</Text>
+//             <TextInput
+//               value={editText}
+//               onChangeText={setEditText}
+//               style={styles.input}
+//               multiline
+//             />
+//             <View style={styles.modalActions}>
+//               <TouchableOpacity onPress={() => setEditPost(null)}>
+//                 <Text style={styles.cancel}>Cancel</Text>
+//               </TouchableOpacity>
+//               <TouchableOpacity onPress={saveEdit}>
+//                 <Text style={styles.save}>Save</Text>
+//               </TouchableOpacity>
+//             </View>
+//           </View>
+//         </View>
+//       </Modal>
+
+//       {likesFor && (
+//         <LikedUsersModal
+//           visible
+//           postId={likesFor}
+//           onClose={() => setLikesFor(null)}
+//         />
+//       )}
+//       {commentsFor && (
+//         <CommentsPopup
+//           postId={commentsFor}
+//           onClose={() => setCommentsFor(null)}
+//         />
+//       )}
+//       {sharesFor && (
+//         <ShareUsersModal
+//           visible
+//           postId={sharesFor}
+//           onClose={() => setSharesFor(null)}
+//         />
+//       )}
+//     </SafeAreaView>
+//   );
+// }
+
+// /* ================= SMALL ================= */
+
+// const Stat = ({ label, value, onPress }: any) => (
+//   <TouchableOpacity onPress={onPress} style={styles.stat}>
+//     <Text style={styles.statValue}>{value}</Text>
+//     <Text style={styles.statLabel}>{label}</Text>
+//   </TouchableOpacity>
+// );
+
+// /* ================= STYLES ================= */
+
+// const styles = StyleSheet.create({
+//   safe: { flex: 1, backgroundColor: "#F8FBFF" },
+//   screenTitle: { fontSize: 18, fontWeight: "800", padding: 16 },
+//   card: { backgroundColor: "#fff", margin: 12, borderRadius: 18, padding: 12 },
+//   ownerRow: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
+//   avatar: { width: 40, height: 40, borderRadius: 20, marginRight: 10 },
+//   ownerName: { fontWeight: "700" },
+//   ownerMeta: { fontSize: 12, color: "#6B7280" },
+//   video: { width: "100%", height: 220, borderRadius: 14, overflow: "hidden" },
+//   playOverlay: {
+//     ...StyleSheet.absoluteFillObject,
+//     justifyContent: "center",
+//     alignItems: "center",
+//   },
+//   title: { marginTop: 10, fontWeight: "700" },
+//   statsRow: {
+//     flexDirection: "row",
+//     justifyContent: "space-around",
+//     marginTop: 12,
+//   },
+//   stat: { alignItems: "center" },
+//   statValue: { fontWeight: "700" },
+//   statLabel: { fontSize: 12 },
+//   actionsRow: {
+//     flexDirection: "row",
+//     justifyContent: "flex-end",
+//     marginTop: 12,
+//   },
+//   denied: { flex: 1, justifyContent: "center", alignItems: "center" },
+//   deniedText: { color: "#DC2626", fontWeight: "700" },
+
+//   modalOverlay: {
+//     flex: 1,
+//     backgroundColor: "rgba(0,0,0,0.4)",
+//     justifyContent: "center",
+//     padding: 24,
+//   },
+//   modal: {
+//     backgroundColor: "#fff",
+//     borderRadius: 14,
+//     padding: 16,
+//   },
+//   modalTitle: { fontWeight: "800", marginBottom: 8 },
+//   input: {
+//     minHeight: 80,
+//     borderWidth: 1,
+//     borderColor: "#E5E7EB",
+//     borderRadius: 8,
+//     padding: 8,
+//     marginBottom: 12,
+//   },
+//   modalActions: {
+//     flexDirection: "row",
+//     justifyContent: "flex-end",
+//     gap: 16,
+//   },
+//   cancel: { color: "#6B7280", fontWeight: "700" },
+//   save: { color: "#2563EB", fontWeight: "800" },
+// });
+
+// // app/(shared)/video/ManageVideos.tsx
+// import { useIsFocused } from "@react-navigation/native";
+// import { useRouter } from "expo-router";
+// import React, { useEffect, useState } from "react";
+
+// import {
+//   Alert,
+//   FlatList,
+//   Modal,
+//   StatusBar,
+//   StyleSheet,
+//   Text,
+//   TextInput,
+//   TouchableOpacity,
+//   View,
+// } from "react-native";
+// import {
+//   SafeAreaView,
+//   useSafeAreaInsets,
+// } from "react-native-safe-area-context";
+
+// import { deleteVideoFromS3 } from "@/app/api/deleteVideoFromS3";
+// import { postsService } from "@/app/services/postsService";
+// import { useAuth } from "@/contexts/AuthContext";
+
+// import {
+//   UploadItem,
+//   videoUploadManager,
+// } from "@/app/services/videoUploadManager";
+
+// import CommentsPopup from "../gallery/components/CommentsPopup";
+// import LikedUsersModal from "../gallery/components/LikedUsersModal";
+// import ShareUsersModal from "../gallery/components/ShareUsersModal";
+// import { ManageVideoCard } from "./components/ManageVideoCard";
+
+// const FALLBACK_THUMBNAIL = "https://dummyimage.com/600x400/000/fff&text=Video";
+// const FALLBACK_AVATAR = "https://dummyimage.com/100x100/cccccc/000&text=U";
+
+// export default function ManageVideos() {
+//   const { user } = useAuth();
+//   const role = user?.role ?? "user";
+
+//   const [videos, setVideos] = useState<any[]>([]);
+//   const [uploading, setUploading] = useState<UploadItem[]>([]);
+//   const [activeIndex, setActiveIndex] = useState(0);
+
+//   const [likesFor, setLikesFor] = useState<string | null>(null);
+//   const [commentsFor, setCommentsFor] = useState<string | null>(null);
+//   const [sharesFor, setSharesFor] = useState<string | null>(null);
+
+//   const [editPost, setEditPost] = useState<any | null>(null);
+//   const [editText, setEditText] = useState("");
+
+//   const insets = useSafeAreaInsets();
+//   const isFocused = useIsFocused();
+//   const router = useRouter();
+
+//   /* ================= FETCH VIDEOS ================= */
+
+//   useEffect(() => {
+//     return postsService.subscribeToPostType("video", (list) => {
+//       if (role === "admin") {
+//         setVideos(list);
+//       } else {
+//         setVideos(list.filter((v) => v.ownerId === user?.uid));
+//       }
+//     });
+//   }, [role, user?.uid]);
+
+//   /* ================= UPLOAD PROGRESS ================= */
+
+//   useEffect(() => {
+//     return videoUploadManager.subscribe(setUploading);
+//   }, []);
+
+//   /* ================= DELETE VIDEO ================= */
+
+//   const deleteVideo = (post: any) => {
+//     Alert.alert(
+//       "Delete Video",
+//       "This will permanently delete the video. Continue?",
+//       [
+//         { text: "Cancel", style: "cancel" },
+//         {
+//           text: "Delete",
+//           style: "destructive",
+//           onPress: async () => {
+//             try {
+//               await postsService.deletePost(post.id);
+//               const s3Key = post.media?.[0]?.s3Key;
+//               if (s3Key) {
+//                 await deleteVideoFromS3(s3Key);
+//               }
+//             } catch (e: any) {
+//               Alert.alert(
+//                 "Delete failed",
+//                 e?.message ?? "Unable to delete video"
+//               );
+//             }
+//           },
+//         },
+//       ]
+//     );
+//   };
+
+//   /* ================= EDIT ================= */
+
+//   const saveEdit = async () => {
+//     if (!editPost) return;
+//     await postsService.updatePost(editPost.id, { title: editText });
+//     setEditPost(null);
+//   };
+
+//   /* ================= PERMISSION ================= */
+
+//   if (role !== "admin" && role !== "monitor") {
+//     return (
+//       <SafeAreaView style={styles.denied}>
+//         <Text style={styles.deniedText}>
+//           You are not allowed to manage videos
+//         </Text>
+//       </SafeAreaView>
+//     );
+//   }
+
+//   /* ================= RENDER ITEM ================= */
+
+//   // const renderItem = ({ item }: any) => {
+//   //   // 🔥 UPLOADING VIDEO
+//   //   if (item.__upload) {
+//   //     return (
+//   //       <View style={styles.uploadCard}>
+//   //         <Text style={styles.uploadTitle}>Uploading video</Text>
+
+//   //         <View style={styles.progressBg}>
+//   //           <View
+//   //             style={[styles.progressFill, { width: `${item.progress}%` }]}
+//   //           />
+//   //         </View>
+
+//   //         <View style={styles.uploadMeta}>
+//   //           <Text style={styles.progressText}>
+//   //             {Math.round(item.progress)}% · {item.status}
+//   //           </Text>
+
+//   //           {item.status === "uploading" && (
+//   //             <TouchableOpacity
+//   //               onPress={() => videoUploadManager.cancel(item.postId)}
+//   //             >
+//   //               <Text style={styles.cancelUpload}>Cancel</Text>
+//   //             </TouchableOpacity>
+//   //           )}
+//   //         </View>
+//   //       </View>
+//   //     );
+//   //   }
+
+//   /* ================= RENDER ITEM ================= */
+
+//   const renderItem = ({ item }: any) => {
+//     // 🔥 UPLOADING VIDEO
+//     if (item.__upload) {
+//       return (
+//         <View style={styles.uploadCard}>
+//           <Text style={styles.uploadTitle}>Uploading video</Text>
+
+//           <View style={styles.progressBg}>
+//             <View
+//               style={[styles.progressFill, { width: `${item.progress}%` }]}
+//             />
+//           </View>
+
+//           <View style={styles.uploadMeta}>
+//             <Text style={styles.progressText}>
+//               {Math.round(item.progress)}% · {item.status}
+//             </Text>
+
+//             {item.status === "uploading" && (
+//               <TouchableOpacity
+//                 onPress={() => videoUploadManager.cancel(item.postId)}
+//               >
+//                 <Text style={styles.cancelUpload}>Cancel</Text>
+//               </TouchableOpacity>
+//             )}
+//           </View>
+//         </View>
+//       );
+//     }
+//     //   // 🔥 NORMAL VIDEO
+//     //   return (
+//     //     <ManageVideoCard
+//     //       item={item}
+//     //       onDelete={deleteVideo}
+//     //       onEdit={(post: any) => {
+//     //         setEditPost(post);
+//     //         setEditText(post.title ?? "");
+//     //       }}
+//     //       onLikes={() => setLikesFor(item.id)}
+//     //       onComments={() => setCommentsFor(item.id)}
+//     //       onShares={() => setSharesFor(item.id)}
+//     //     />
+//     //   );
+//     // };
+
+//     // 🔥 NORMAL VIDEO
+//     return (
+//       <View>
+//         <ManageVideoCard
+//           item={item}
+//           onDelete={deleteVideo}
+//           onEdit={(post: any) => {
+//             setEditPost(post);
+//             setEditText(post.title ?? "");
+//           }}
+//           onLikes={() => setLikesFor(item.id)}
+//           onComments={() => setCommentsFor(item.id)}
+//           onShares={() => setSharesFor(item.id)}
+//         />
+
+//         {/* 👇 SOCIAL INFO BAR (NEW UI) */}
+//         <View style={styles.socialBar}>
+//           <TouchableOpacity
+//             style={styles.socialBtn}
+//             onPress={() => setLikesFor(item.id)}
+//           >
+//             <Text style={styles.socialIcon}>👍</Text>
+//             <Text style={styles.socialText}>{item.likesCount ?? 0} Likes</Text>
+//           </TouchableOpacity>
+
+//           <TouchableOpacity
+//             style={styles.socialBtn}
+//             onPress={() => setCommentsFor(item.id)}
+//           >
+//             <Text style={styles.socialIcon}>💬</Text>
+//             <Text style={styles.socialText}>
+//               {item.commentsCount ?? 0} Comments
+//             </Text>
+//           </TouchableOpacity>
+
+//           <TouchableOpacity
+//             style={styles.socialBtn}
+//             onPress={() => setSharesFor(item.id)}
+//           >
+//             <Text style={styles.socialIcon}>🔁</Text>
+//             <Text style={styles.socialText}>
+//               {item.sharesCount ?? 0} Shares
+//             </Text>
+//           </TouchableOpacity>
+//         </View>
+//       </View>
+//     );
+//   };
+
+//   /* ================= COMBINED DATA ================= */
+
+//   const data = [...uploading.map((u) => ({ __upload: true, ...u })), ...videos];
+
+//   /* ================= UI ================= */
+
+//   return (
+//     <SafeAreaView style={styles.safe}>
+//       <StatusBar barStyle="dark-content" />
+//       <Text style={styles.screenTitle}>Manage Videos</Text>
+
+//       <FlatList
+//         data={data}
+//         keyExtractor={(item: any) => item.postId || item.id}
+//         renderItem={renderItem}
+//         showsVerticalScrollIndicator={false}
+//       />
+
+//       {/* EDIT MODAL */}
+//       <Modal visible={!!editPost} transparent animationType="fade">
+//         <View style={styles.modalOverlay}>
+//           <View style={styles.modal}>
+//             <Text style={styles.modalTitle}>Edit Description</Text>
+//             <TextInput
+//               value={editText}
+//               onChangeText={setEditText}
+//               style={styles.input}
+//               multiline
+//             />
+//             <View style={styles.modalActions}>
+//               <TouchableOpacity onPress={() => setEditPost(null)}>
+//                 <Text style={styles.cancel}>Cancel</Text>
+//               </TouchableOpacity>
+//               <TouchableOpacity onPress={saveEdit}>
+//                 <Text style={styles.save}>Save</Text>
+//               </TouchableOpacity>
+//             </View>
+//           </View>
+//         </View>
+//       </Modal>
+
+//       {likesFor && (
+//         <LikedUsersModal
+//           visible
+//           postId={likesFor}
+//           onClose={() => setLikesFor(null)}
+//         />
+//       )}
+//       {commentsFor && (
+//         <CommentsPopup
+//           postId={commentsFor}
+//           onClose={() => setCommentsFor(null)}
+//         />
+//       )}
+//       {sharesFor && (
+//         <ShareUsersModal
+//           visible
+//           postId={sharesFor}
+//           onClose={() => setSharesFor(null)}
+//         />
+//       )}
+//     </SafeAreaView>
+//   );
+// }
+
+// /* ================= STYLES ================= */
+
+// const styles = StyleSheet.create({
+//   safe: { flex: 1, backgroundColor: "#F8FBFF" },
+//   screenTitle: { fontSize: 18, fontWeight: "800", padding: 16 },
+
+//   uploadCard: {
+//     backgroundColor: "#fff",
+//     marginHorizontal: 12,
+//     marginTop: 8,
+//     padding: 12,
+//     borderRadius: 14,
+//   },
+//   uploadTitle: { fontWeight: "700", marginBottom: 8 },
+//   progressBg: {
+//     height: 6,
+//     backgroundColor: "#E5E7EB",
+//     borderRadius: 6,
+//     overflow: "hidden",
+//   },
+//   progressFill: {
+//     height: "100%",
+//     backgroundColor: "#34C759",
+//   },
+//   uploadMeta: {
+//     marginTop: 6,
+//     flexDirection: "row",
+//     justifyContent: "space-between",
+//     alignItems: "center",
+//   },
+//   progressText: { fontWeight: "600", color: "#374151" },
+//   cancelUpload: { color: "#DC2626", fontWeight: "700" },
+
+//   denied: { flex: 1, justifyContent: "center", alignItems: "center" },
+//   deniedText: { color: "#DC2626", fontWeight: "700" },
+
+//   modalOverlay: {
+//     flex: 1,
+//     backgroundColor: "rgba(0,0,0,0.4)",
+//     justifyContent: "center",
+//     padding: 24,
+//   },
+//   modal: {
+//     backgroundColor: "#fff",
+//     borderRadius: 14,
+//     padding: 16,
+//   },
+//   modalTitle: { fontWeight: "800", marginBottom: 8 },
+//   input: {
+//     minHeight: 80,
+//     borderWidth: 1,
+//     borderColor: "#E5E7EB",
+//     borderRadius: 8,
+//     padding: 8,
+//     marginBottom: 12,
+//   },
+//   modalActions: {
+//     flexDirection: "row",
+//     justifyContent: "flex-end",
+//     gap: 16,
+//   },
+//   cancel: { color: "#6B7280", fontWeight: "700" },
+//   save: { color: "#2563EB", fontWeight: "800" },
+//   /* ================= SOCIAL BAR ================= */
+
+//   socialBar: {
+//     flexDirection: "row",
+//     justifyContent: "space-around",
+//     paddingVertical: 10,
+//     marginHorizontal: 12,
+//     marginBottom: 6,
+//     backgroundColor: "#FFFFFF",
+//     borderBottomLeftRadius: 14,
+//     borderBottomRightRadius: 14,
+//     borderTopWidth: 1,
+//     borderColor: "#E5E7EB",
+//   },
+
+//   socialBtn: {
+//     flexDirection: "row",
+//     alignItems: "center",
+//     gap: 6,
+//   },
+
+//   socialIcon: {
+//     fontSize: 14,
+//   },
+
+//   socialText: {
+//     fontSize: 13,
+//     fontWeight: "700",
+//     color: "#374151",
+//   },
+// });
+
 // app/(shared)/video/ManageVideos.tsx
 import { useIsFocused } from "@react-navigation/native";
 import { useRouter } from "expo-router";
@@ -1128,6 +1983,13 @@ import { deleteVideoFromS3 } from "@/app/api/deleteVideoFromS3";
 import { postsService } from "@/app/services/postsService";
 import { useAuth } from "@/contexts/AuthContext";
 
+import {
+  UploadItem,
+  videoUploadManager,
+} from "@/app/services/videoUploadManager";
+
+import Colors from "@/data/Colors";
+import { Ionicons } from "@expo/vector-icons";
 import CommentsPopup from "../gallery/components/CommentsPopup";
 import LikedUsersModal from "../gallery/components/LikedUsersModal";
 import ShareUsersModal from "../gallery/components/ShareUsersModal";
@@ -1141,8 +2003,8 @@ export default function ManageVideos() {
   const role = user?.role ?? "user";
 
   const [videos, setVideos] = useState<any[]>([]);
+  const [uploading, setUploading] = useState<UploadItem[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [previewFor, setPreviewFor] = useState<string | null>(null);
 
   const [likesFor, setLikesFor] = useState<string | null>(null);
   const [commentsFor, setCommentsFor] = useState<string | null>(null);
@@ -1167,47 +2029,13 @@ export default function ManageVideos() {
     });
   }, [role, user?.uid]);
 
+  /* ================= UPLOAD PROGRESS ================= */
+
+  useEffect(() => {
+    return videoUploadManager.subscribe(setUploading);
+  }, []);
+
   /* ================= DELETE VIDEO ================= */
-
-  // const deleteVideo = (post: any) => {
-  //   Alert.alert(
-  //     "Delete Video",
-  //     "This will permanently delete the video. Continue?",
-  //     [
-  //       { text: "Cancel", style: "cancel" },
-  //       {
-  //         text: "Delete",
-  //         style: "destructive",
-  //         onPress: async () => {
-  //           try {
-  //             // 1️⃣ Delete from S3
-  //             const s3Key = post.media?.[0]?.s3Key;
-  //             if (s3Key) {
-  //               await deleteVideoFromS3(s3Key);
-  //             }
-
-  //             // 2️⃣ 🔥 DELETE LOCAL VIDEO CACHE (IMPORTANT)
-  //             await FileSystem.deleteAsync(
-  //               FileSystem.documentDirectory +
-  //                 "video-cache/" +
-  //                 post.id +
-  //                 ".mp4",
-  //               { idempotent: true }
-  //             );
-
-  //             // 3️⃣ Delete Firestore post
-  //             await postsService.deletePost(post.id);
-  //           } catch (e: any) {
-  //             Alert.alert(
-  //               "Delete failed",
-  //               e?.message ?? "Unable to delete video"
-  //             );
-  //           }
-  //         },
-  //       },
-  //     ]
-  //   );
-  // };
 
   const deleteVideo = (post: any) => {
     Alert.alert(
@@ -1220,26 +2048,12 @@ export default function ManageVideos() {
           style: "destructive",
           onPress: async () => {
             try {
-              console.log("🟡 DELETE START");
-              console.log("Post ID:", post.id);
-              console.log("Owner ID:", post.ownerId);
-              console.log("Current user:", user?.uid);
-              console.log("Role:", user?.role);
-
-              // 1️⃣ Firestore delete
-              console.log("🟡 Deleting Firestore post...");
               await postsService.deletePost(post.id);
-              console.log("🟢 Firestore delete DONE");
-
-              // 2️⃣ S3 delete
               const s3Key = post.media?.[0]?.s3Key;
-              console.log("🟡 Deleting S3:", s3Key);
               if (s3Key) {
                 await deleteVideoFromS3(s3Key);
               }
-              console.log("🟢 S3 delete DONE");
             } catch (e: any) {
-              console.error("🔴 DELETE FAILED:", e);
               Alert.alert(
                 "Delete failed",
                 e?.message ?? "Unable to delete video"
@@ -1259,18 +2073,6 @@ export default function ManageVideos() {
     setEditPost(null);
   };
 
-  /* ================= TIME ================= */
-
-  const formatTime = (ts: any) => {
-    if (!ts?.seconds) return "Just now";
-    const diff = Date.now() - ts.seconds * 1000;
-    const m = Math.floor(diff / 60000);
-    if (m < 60) return `${m}m ago`;
-    const h = Math.floor(m / 60);
-    if (h < 24) return `${h}h ago`;
-    return `${Math.floor(h / 24)}d ago`;
-  };
-
   /* ================= PERMISSION ================= */
 
   if (role !== "admin" && role !== "monitor") {
@@ -1285,146 +2087,98 @@ export default function ManageVideos() {
 
   /* ================= RENDER ITEM ================= */
 
-  // const renderItem = ({ item, index }: any) => {
-  //   const shouldPreload = Math.abs(index - activeIndex) <= 1;
-  //   const isPlaying = previewFor === item.id && isFocused;
-  //   const thumbnail = item.media?.[0]?.thumbnailUrl ?? FALLBACK_THUMBNAIL;
+  const renderItem = ({ item }: any) => {
+    // 🔥 UPLOADING VIDEO
+    if (item.__upload) {
+      return (
+        <View style={styles.uploadCard}>
+          <Text style={styles.uploadTitle}>Uploading video</Text>
 
-  //   const [localUri, setLocalUri] = useState<string | null>(null);
+          <View style={styles.progressBg}>
+            <View
+              style={[styles.progressFill, { width: `${item.progress}%` }]}
+            />
+          </View>
 
-  //   useEffect(() => {
-  //     let alive = true;
-  //     if (!isPlaying || !item.id || !item.media?.[0]?.url) return;
+          <View style={styles.uploadMeta}>
+            <Text style={styles.progressText}>
+              {Math.round(item.progress)}% · {item.status}
+            </Text>
 
-  //     videoCacheService
-  //       .getCachedVideo(item.id, item.media[0].url)
-  //       .then((path) => alive && setLocalUri(path))
-  //       .catch(() => {});
+            {item.status === "uploading" && (
+              <TouchableOpacity
+                onPress={() => videoUploadManager.cancel(item.postId)}
+              >
+                <Text style={styles.cancelUpload}>Cancel</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      );
+    }
 
-  //     return () => {
-  //       alive = false;
-  //     };
-  //   }, [isPlaying]);
+    // 🔥 NORMAL VIDEO
+    return (
+      <View>
+        <ManageVideoCard
+          item={item}
+          onDelete={deleteVideo}
+          onEdit={(post: any) => {
+            setEditPost(post);
+            setEditText(post.title ?? "");
+          }}
+          onLikes={() => setLikesFor(item.id)}
+          onComments={() => setCommentsFor(item.id)}
+          onShares={() => setSharesFor(item.id)}
+        />
 
-  //   return (
-  //     <View style={styles.card}>
-  //       {/* OWNER */}
-  //       <View style={styles.ownerRow}>
-  //         <Image
-  //           source={{ uri: item.ownerProfileImage ?? FALLBACK_AVATAR }}
-  //           style={styles.avatar}
-  //         />
-  //         <View style={{ flex: 1 }}>
-  //           <Text style={styles.ownerName}>{item.ownerName}</Text>
-  //           <Text style={styles.ownerMeta}>
-  //             {item.ownerRole} · {formatTime(item.createdAt)}
-  //           </Text>
-  //         </View>
+        {/* 👇 SOCIAL INFO BAR */}
+        <View style={styles.socialBar}>
+          <TouchableOpacity
+            style={styles.socialBtn}
+            onPress={() => setLikesFor(item.id)}
+          >
+            <Text style={styles.socialIcon}>👍</Text>
+            <Text style={styles.socialText}>{item.likeCount ?? 0} Likes</Text>
+          </TouchableOpacity>
 
-  //         <TouchableOpacity
-  //           onPress={() => {
-  //             setEditPost(item);
-  //             setEditText(item.title ?? "");
-  //           }}
-  //         >
-  //           <Ionicons name="pencil" size={20} color="#2563EB" />
-  //         </TouchableOpacity>
-  //       </View>
+          <TouchableOpacity
+            style={styles.socialBtn}
+            onPress={() => setCommentsFor(item.id)}
+          >
+            <Text style={styles.socialIcon}>💬</Text>
+            <Text style={styles.socialText}>
+              {item.commentCount ?? 0} Comments
+            </Text>
+          </TouchableOpacity>
 
-  //       {/* VIDEO */}
-  //       <View style={styles.video}>
-  //         <Image
-  //           source={{ uri: thumbnail }}
-  //           style={StyleSheet.absoluteFill}
-  //           resizeMode="cover"
-  //         />
+          <TouchableOpacity
+            style={styles.socialBtn}
+            onPress={() => setSharesFor(item.id)}
+          >
+            <Text style={styles.socialIcon}>🔁</Text>
+            <Text style={styles.socialText}>{item.shareCount ?? 0} Shares</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
 
-  //         {shouldPreload && (
-  //           <Video
-  //             source={{
-  //               uri: localUri || item.media?.[0]?.url,
-  //             }}
-  //             style={StyleSheet.absoluteFill}
-  //             resizeMode="cover"
-  //             paused={!isPlaying}
-  //           />
-  //         )}
+  /* ================= COMBINED DATA ================= */
 
-  //         {!isPlaying && (
-  //           <Pressable
-  //             style={styles.playOverlay}
-  //             onPress={() => setPreviewFor(item.id)}
-  //           >
-  //             <Ionicons name="play-circle" size={64} color="#ffffffcc" />
-  //           </Pressable>
-  //         )}
-  //       </View>
-
-  //       <Text style={styles.title}>{item.title ?? "Untitled Video"}</Text>
-
-  //       {/* STATS */}
-  //       <View style={styles.statsRow}>
-  //         <Stat
-  //           label="Likes"
-  //           value={item.likeCount ?? 0}
-  //           onPress={() => setLikesFor(item.id)}
-  //         />
-  //         <Stat
-  //           label="Comments"
-  //           value={item.commentCount ?? 0}
-  //           onPress={() => setCommentsFor(item.id)}
-  //         />
-  //         <Stat
-  //           label="Shares"
-  //           value={item.shareCount ?? 0}
-  //           onPress={() => setSharesFor(item.id)}
-  //         />
-  //       </View>
-
-  //       {/* ACTIONS */}
-  //       <View style={styles.actionsRow}>
-  //         <TouchableOpacity onPress={() => deleteVideo(item)}>
-  //           <Ionicons name="trash-outline" size={22} color="#DC2626" />
-  //         </TouchableOpacity>
-  //       </View>
-  //     </View>
-  //   );
-  // };
-
-  const renderItem = ({ item, index }: any) => (
-    <ManageVideoCard
-      item={item}
-      index={index}
-      activeIndex={activeIndex}
-      isFocused={isFocused}
-      onDelete={deleteVideo}
-      onEdit={(post: any) => {
-        setEditPost(post);
-        setEditText(post.title ?? "");
-      }}
-      onLikes={() => setLikesFor(item.id)}
-      onComments={() => setCommentsFor(item.id)}
-      onShares={() => setSharesFor(item.id)}
-    />
-  );
+  const data = [...uploading.map((u) => ({ __upload: true, ...u })), ...videos];
 
   /* ================= UI ================= */
 
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle="dark-content" />
-      <Text style={styles.screenTitle}>Manage Videos</Text>
 
       <FlatList
-        data={videos}
-        keyExtractor={(item) => item.id}
+        data={data}
+        keyExtractor={(item: any) => item.postId || item.id}
         renderItem={renderItem}
         showsVerticalScrollIndicator={false}
-        onViewableItemsChanged={({ viewableItems }) => {
-          if (viewableItems?.length) {
-            setActiveIndex(viewableItems[0].index ?? 0);
-          }
-        }}
       />
 
       {/* EDIT MODAL */}
@@ -1470,49 +2224,49 @@ export default function ManageVideos() {
           onClose={() => setSharesFor(null)}
         />
       )}
+
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => router.push("/(shared)/video/AddVideo")}
+      >
+        <Ionicons name="add" size={32} color={Colors.textInverse} />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
-
-/* ================= SMALL ================= */
-
-const Stat = ({ label, value, onPress }: any) => (
-  <TouchableOpacity onPress={onPress} style={styles.stat}>
-    <Text style={styles.statValue}>{value}</Text>
-    <Text style={styles.statLabel}>{label}</Text>
-  </TouchableOpacity>
-);
 
 /* ================= STYLES ================= */
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#F8FBFF" },
-  screenTitle: { fontSize: 18, fontWeight: "800", padding: 16 },
-  card: { backgroundColor: "#fff", margin: 12, borderRadius: 18, padding: 12 },
-  ownerRow: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
-  avatar: { width: 40, height: 40, borderRadius: 20, marginRight: 10 },
-  ownerName: { fontWeight: "700" },
-  ownerMeta: { fontSize: 12, color: "#6B7280" },
-  video: { width: "100%", height: 220, borderRadius: 14, overflow: "hidden" },
-  playOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: "center",
+
+  uploadCard: {
+    backgroundColor: "#fff",
+    marginHorizontal: 12,
+    marginTop: 8,
+    padding: 12,
+    borderRadius: 14,
+  },
+  uploadTitle: { fontWeight: "700", marginBottom: 8 },
+  progressBg: {
+    height: 6,
+    backgroundColor: "#E5E7EB",
+    borderRadius: 6,
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: "#34C759",
+  },
+  uploadMeta: {
+    marginTop: 6,
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
   },
-  title: { marginTop: 10, fontWeight: "700" },
-  statsRow: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginTop: 12,
-  },
-  stat: { alignItems: "center" },
-  statValue: { fontWeight: "700" },
-  statLabel: { fontSize: 12 },
-  actionsRow: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    marginTop: 12,
-  },
+  progressText: { fontWeight: "600", color: "#374151" },
+  cancelUpload: { color: "#DC2626", fontWeight: "700" },
+
   denied: { flex: 1, justifyContent: "center", alignItems: "center" },
   deniedText: { color: "#DC2626", fontWeight: "700" },
 
@@ -1543,4 +2297,50 @@ const styles = StyleSheet.create({
   },
   cancel: { color: "#6B7280", fontWeight: "700" },
   save: { color: "#2563EB", fontWeight: "800" },
+
+  /* ================= SOCIAL BAR ================= */
+
+  socialBar: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    paddingVertical: 10,
+    marginHorizontal: 12,
+    marginBottom: 6,
+    backgroundColor: "#FFFFFF",
+    borderBottomLeftRadius: 14,
+    borderBottomRightRadius: 14,
+    borderTopWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+
+  socialBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+
+  socialIcon: {
+    fontSize: 14,
+  },
+
+  socialText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#374151",
+  },
+  fab: {
+    position: "absolute",
+    bottom: 25,
+    right: 25,
+    backgroundColor: Colors.primary,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: Colors.shadow,
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
+  },
 });

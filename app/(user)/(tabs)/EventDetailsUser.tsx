@@ -1,5 +1,5 @@
 // user/(tabs)/EventDetailsUser.tsx
-import { getEvent, markInterested } from "@/app/(monitor)/(tabs)/api/events";
+import { getEvent, markInterested } from "@/app/services/events";
 import { db } from "@/configs/FirebaseConfig";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useFocusEffect } from "@react-navigation/native";

@@ -262,6 +262,7 @@ export default function AdminTabs() {
 
       <Tabs.Screen name="AdminSurveyManager" options={{ href: null }} />
 
+      <Tabs.Screen name="LeaderProfileManager" options={{ href: null }} />
       {/* Any future admin-only screens can be hidden here */}
     </Tabs>
   );

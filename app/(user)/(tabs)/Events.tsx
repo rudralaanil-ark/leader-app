@@ -1,7 +1,5 @@
-import {
-  listenToEvents,
-  markInterested,
-} from "@/app/(monitor)/(tabs)/api/events";
+// app/(user)/(tabs)/Events.tsx
+import { listenToEvents, markInterested } from "@/app/services/events";
 import { db } from "@/configs/FirebaseConfig";
 import Colors from "@/data/Colors";
 import Ionicons from "@expo/vector-icons/Ionicons";

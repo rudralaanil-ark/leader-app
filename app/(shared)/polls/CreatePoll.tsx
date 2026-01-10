@@ -283,23 +283,326 @@
 //   },
 // });
 
+// // app/(shared)/polls/CreatePoll.tsx
+// import { pollService } from "@/app/services/pollService";
+// import { useAuth } from "@/contexts/AuthContext";
+// import Colors from "@/data/Colors";
+// import DateTimePicker from "@react-native-community/datetimepicker";
+// import { useRouter } from "expo-router";
+// import React, { useState } from "react";
+// import {
+//   Alert,
+//   Pressable,
+//   ScrollView,
+//   StyleSheet,
+//   Text,
+//   TextInput,
+//   View,
+// } from "react-native";
+// import uuid from "react-native-uuid";
+
+// const STAR_OPTIONS = [
+//   { id: "1", label: "⭐ 1" },
+//   { id: "2", label: "⭐⭐ 2" },
+//   { id: "3", label: "⭐⭐⭐ 3" },
+//   { id: "4", label: "⭐⭐⭐⭐ 4" },
+//   { id: "5", label: "⭐⭐⭐⭐⭐ 5" },
+// ];
+
+// const EMOJI_OPTIONS = [
+//   { id: "a", label: "😡" },
+//   { id: "b", label: "😕" },
+//   { id: "c", label: "😐" },
+//   { id: "d", label: "😊" },
+//   { id: "e", label: "😍" },
+// ];
+
+// export default function CreatePoll() {
+//   const router = useRouter();
+//   const { user } = useAuth();
+
+//   const [question, setQuestion] = useState("");
+//   const [pollType, setPollType] = useState<"single" | "multiple" | "rating">(
+//     "single"
+//   );
+//   const [ratingStyle, setRatingStyle] = useState<"stars" | "emoji">("stars");
+//   const [allowRevote, setAllowRevote] = useState(true);
+//   const [options, setOptions] = useState([
+//     { id: uuid.v4().toString(), label: "" },
+//     { id: uuid.v4().toString(), label: "" },
+//   ]);
+
+//   const [expiresAt, setExpiresAt] = useState<Date | null>(null);
+//   const [showPicker, setShowPicker] = useState(false);
+//   const [submitting, setSubmitting] = useState(false);
+
+//   const handleAddOption = () => {
+//     setOptions([...options, { id: uuid.v4().toString(), label: "" }]);
+//   };
+
+//   const handleSubmit = async () => {
+//     if (!question.trim()) return Alert.alert("Enter a question");
+
+//     let finalOptions = [...options];
+
+//     if (pollType === "rating") {
+//       finalOptions = ratingStyle === "stars" ? STAR_OPTIONS : EMOJI_OPTIONS;
+//     } else {
+//       finalOptions = finalOptions.filter((o) => o.label.trim() !== "");
+//       if (finalOptions.length < 2)
+//         return Alert.alert("Minimum 2 valid options required");
+//     }
+
+//     try {
+//       setSubmitting(true);
+
+//       await pollService.createPoll({
+//         question,
+//         pollType,
+//         ratingStyle,
+//         options: finalOptions,
+//         allowRevote,
+//         expiresAt,
+//         createdBy: {
+//           uid: user?.uid ?? "",
+//           name: user?.fullName ?? "Unknown",
+//           role: user?.role,
+//           profileImage: user?.profileImage ?? null,
+//         },
+//       });
+
+//       Alert.alert("Success", "Poll created", [
+//         { text: "OK", onPress: () => router.back() },
+//       ]);
+//     } catch (e) {
+//       Alert.alert("Error", "Something went wrong");
+//     } finally {
+//       setSubmitting(false);
+//     }
+//   };
+
+//   return (
+//     <ScrollView style={styles.container}>
+//       <Text style={styles.heading}>Create Poll</Text>
+
+//       {/* Question */}
+//       <Text style={styles.label}>Question</Text>
+//       <TextInput
+//         value={question}
+//         onChangeText={setQuestion}
+//         style={styles.textInput}
+//         placeholder="Ask your opinion..."
+//         placeholderTextColor={Colors.textMuted}
+//       />
+
+//       {/* Poll Type */}
+//       <Text style={styles.label}>Poll Type</Text>
+//       <View style={styles.row}>
+//         {["single", "multiple", "rating"].map((type) => (
+//           <Pressable
+//             key={type}
+//             style={[
+//               styles.typeButton,
+//               pollType === type && styles.typeButtonActive,
+//             ]}
+//             onPress={() => setPollType(type as any)}
+//           >
+//             <Text
+//               style={[
+//                 styles.typeButtonText,
+//                 pollType === type && { color: Colors.textInverse },
+//               ]}
+//             >
+//               {type.toUpperCase()}
+//             </Text>
+//           </Pressable>
+//         ))}
+//       </View>
+
+//       {/* Rating Style Selection */}
+//       {pollType === "rating" && (
+//         <>
+//           <Text style={styles.label}>Rating Style</Text>
+//           <View style={styles.row}>
+//             {["stars", "emoji"].map((style) => (
+//               <Pressable
+//                 key={style}
+//                 style={[
+//                   styles.typeButton,
+//                   ratingStyle === style && styles.typeButtonActive,
+//                 ]}
+//                 onPress={() => setRatingStyle(style as any)}
+//               >
+//                 <Text
+//                   style={[
+//                     styles.typeButtonText,
+//                     ratingStyle === style && { color: Colors.textInverse },
+//                   ]}
+//                 >
+//                   {style}
+//                 </Text>
+//               </Pressable>
+//             ))}
+//           </View>
+//         </>
+//       )}
+
+//       {/* Options – hidden for rating polls */}
+//       {pollType !== "rating" && (
+//         <>
+//           <Text style={styles.label}>Options</Text>
+//           {options.map((opt, idx) => (
+//             <View key={opt.id} style={styles.optionRow}>
+//               <TextInput
+//                 style={styles.optionInput}
+//                 value={opt.label}
+//                 placeholder={`Option ${idx + 1}`}
+//                 onChangeText={(txt) =>
+//                   setOptions(
+//                     options.map((o) =>
+//                       o.id === opt.id ? { ...o, label: txt } : o
+//                     )
+//                   )
+//                 }
+//               />
+//             </View>
+//           ))}
+
+//           <Pressable style={styles.addOptionBtn} onPress={handleAddOption}>
+//             <Text style={styles.addOptionText}>+ Add Option</Text>
+//           </Pressable>
+//         </>
+//       )}
+
+//       {/* Toggle */}
+//       <Pressable
+//         style={styles.toggleRow}
+//         onPress={() => setAllowRevote(!allowRevote)}
+//       >
+//         <Text style={styles.label}>Allow revote</Text>
+//         <Text style={styles.toggleValue}>{allowRevote ? "YES" : "NO"}</Text>
+//       </Pressable>
+
+//       {/* Date Picker */}
+//       <Pressable style={styles.toggleRow} onPress={() => setShowPicker(true)}>
+//         <Text style={styles.label}>Expiry date</Text>
+//         <Text style={styles.toggleValue}>
+//           {expiresAt ? expiresAt.toDateString() : "Not set"}
+//         </Text>
+//       </Pressable>
+
+//       {showPicker && (
+//         <DateTimePicker
+//           value={expiresAt ?? new Date()}
+//           onChange={(e, date) => {
+//             setShowPicker(false);
+//             if (date) setExpiresAt(date);
+//           }}
+//         />
+//       )}
+
+//       {/* Submit */}
+//       <Pressable
+//         style={[styles.submitBtn, submitting && { opacity: 0.6 }]}
+//         disabled={submitting}
+//         onPress={handleSubmit}
+//       >
+//         <Text style={styles.submitBtnText}>
+//           {submitting ? "Processing..." : "Create Poll"}
+//         </Text>
+//       </Pressable>
+
+//       <View style={{ height: 40 }}></View>
+//     </ScrollView>
+//   );
+// }
+
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//     backgroundColor: Colors.background,
+//     padding: 16,
+//   },
+//   heading: { fontSize: 22, fontWeight: "700", color: Colors.textPrimary },
+//   label: {
+//     marginTop: 16,
+//     fontSize: 14,
+//     fontWeight: "600",
+//     color: Colors.textSecondary,
+//   },
+//   textInput: {
+//     backgroundColor: Colors.surface,
+//     borderRadius: 10,
+//     padding: 10,
+//     marginTop: 4,
+//     borderWidth: 1,
+//     borderColor: Colors.border,
+//   },
+//   row: { flexDirection: "row", marginTop: 8 },
+//   typeButton: {
+//     paddingHorizontal: 12,
+//     paddingVertical: 8,
+//     borderRadius: 10,
+//     borderWidth: 1,
+//     borderColor: Colors.border,
+//     marginRight: 8,
+//   },
+//   typeButtonActive: {
+//     backgroundColor: Colors.primary,
+//     borderColor: Colors.primary,
+//   },
+//   typeButtonText: { color: Colors.textPrimary, fontSize: 13 },
+//   optionRow: { flexDirection: "row", marginTop: 8 },
+//   optionInput: {
+//     flex: 1,
+//     padding: 10,
+//     backgroundColor: Colors.surface,
+//     borderColor: Colors.border,
+//     borderWidth: 1,
+//     borderRadius: 10,
+//   },
+//   addOptionBtn: { marginTop: 10 },
+//   addOptionText: { color: Colors.primary, fontWeight: "700" },
+//   toggleRow: {
+//     flexDirection: "row",
+//     justifyContent: "space-between",
+//     marginTop: 20,
+//   },
+//   toggleValue: { color: Colors.primary, fontWeight: "700" },
+//   submitBtn: {
+//     marginTop: 24,
+//     backgroundColor: Colors.primary,
+//     paddingVertical: 14,
+//     alignItems: "center",
+//     borderRadius: 12,
+//   },
+//   submitBtnText: { color: Colors.textInverse, fontWeight: "700", fontSize: 15 },
+// });
+
+// app/(shared)/polls/CreatePoll.tsx
 import { pollService } from "@/app/services/pollService";
 import { useAuth } from "@/contexts/AuthContext";
 import Colors from "@/data/Colors";
+import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import uuid from "react-native-uuid";
 
+/* ---------- constants unchanged ---------- */
 const STAR_OPTIONS = [
   { id: "1", label: "⭐ 1" },
   { id: "2", label: "⭐⭐ 2" },
@@ -335,6 +638,7 @@ export default function CreatePoll() {
   const [showPicker, setShowPicker] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  /* ---------- logic unchanged ---------- */
   const handleAddOption = () => {
     setOptions([...options, { id: uuid.v4().toString(), label: "" }]);
   };
@@ -373,7 +677,7 @@ export default function CreatePoll() {
       Alert.alert("Success", "Poll created", [
         { text: "OK", onPress: () => router.back() },
       ]);
-    } catch (e) {
+    } catch {
       Alert.alert("Error", "Something went wrong");
     } finally {
       setSubmitting(false);
@@ -381,148 +685,188 @@ export default function CreatePoll() {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.heading}>Create Poll</Text>
+    <SafeAreaView style={styles.safe}>
+      <StatusBar barStyle="dark-content" backgroundColor={Colors.background} />
 
-      {/* Question */}
-      <Text style={styles.label}>Question</Text>
-      <TextInput
-        value={question}
-        onChangeText={setQuestion}
-        style={styles.textInput}
-        placeholder="Ask your opinion..."
-        placeholderTextColor={Colors.textMuted}
-      />
-
-      {/* Poll Type */}
-      <Text style={styles.label}>Poll Type</Text>
-      <View style={styles.row}>
-        {["single", "multiple", "rating"].map((type) => (
-          <Pressable
-            key={type}
-            style={[
-              styles.typeButton,
-              pollType === type && styles.typeButtonActive,
-            ]}
-            onPress={() => setPollType(type as any)}
-          >
-            <Text
-              style={[
-                styles.typeButtonText,
-                pollType === type && { color: Colors.textInverse },
-              ]}
-            >
-              {type.toUpperCase()}
-            </Text>
-          </Pressable>
-        ))}
+      {/* ---------- HEADER ---------- */}
+      <View style={styles.header}>
+        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+          <Ionicons name="arrow-back" size={22} color={Colors.textPrimary} />
+        </Pressable>
+        <Text style={styles.headerTitle}>Create Poll</Text>
+        <View style={{ width: 32 }} />
       </View>
 
-      {/* Rating Style Selection */}
-      {pollType === "rating" && (
-        <>
-          <Text style={styles.label}>Rating Style</Text>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Question */}
+          <Text style={styles.label}>Question</Text>
+          <TextInput
+            value={question}
+            onChangeText={setQuestion}
+            style={styles.textInput}
+            placeholder="Ask your opinion..."
+            placeholderTextColor={Colors.textMuted}
+          />
+
+          {/* Poll Type */}
+          <Text style={styles.label}>Poll Type</Text>
           <View style={styles.row}>
-            {["stars", "emoji"].map((style) => (
+            {["single", "multiple", "rating"].map((type) => (
               <Pressable
-                key={style}
+                key={type}
                 style={[
                   styles.typeButton,
-                  ratingStyle === style && styles.typeButtonActive,
+                  pollType === type && styles.typeButtonActive,
                 ]}
-                onPress={() => setRatingStyle(style as any)}
+                onPress={() => setPollType(type as any)}
               >
                 <Text
                   style={[
                     styles.typeButtonText,
-                    ratingStyle === style && { color: Colors.textInverse },
+                    pollType === type && { color: Colors.textInverse },
                   ]}
                 >
-                  {style}
+                  {type.toUpperCase()}
                 </Text>
               </Pressable>
             ))}
           </View>
-        </>
-      )}
 
-      {/* Options – hidden for rating polls */}
-      {pollType !== "rating" && (
-        <>
-          <Text style={styles.label}>Options</Text>
-          {options.map((opt, idx) => (
-            <View key={opt.id} style={styles.optionRow}>
-              <TextInput
-                style={styles.optionInput}
-                value={opt.label}
-                placeholder={`Option ${idx + 1}`}
-                onChangeText={(txt) =>
-                  setOptions(
-                    options.map((o) =>
-                      o.id === opt.id ? { ...o, label: txt } : o
+          {/* Rating Style */}
+          {pollType === "rating" && (
+            <>
+              <Text style={styles.label}>Rating Style</Text>
+              <View style={styles.row}>
+                {["stars", "emoji"].map((style) => (
+                  <Pressable
+                    key={style}
+                    style={[
+                      styles.typeButton,
+                      ratingStyle === style && styles.typeButtonActive,
+                    ]}
+                    onPress={() => setRatingStyle(style as any)}
+                  >
+                    <Text
+                      style={[
+                        styles.typeButtonText,
+                        ratingStyle === style && {
+                          color: Colors.textInverse,
+                        },
+                      ]}
+                    >
+                      {style}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            </>
+          )}
+
+          {/* Options */}
+          {pollType !== "rating" && (
+            <>
+              <Text style={styles.label}>Options</Text>
+              {options.map((opt, idx) => (
+                <TextInput
+                  key={opt.id}
+                  style={styles.optionInput}
+                  value={opt.label}
+                  placeholder={`Option ${idx + 1}`}
+                  onChangeText={(txt) =>
+                    setOptions(
+                      options.map((o) =>
+                        o.id === opt.id ? { ...o, label: txt } : o
+                      )
                     )
-                  )
-                }
-              />
-            </View>
-          ))}
+                  }
+                />
+              ))}
 
-          <Pressable style={styles.addOptionBtn} onPress={handleAddOption}>
-            <Text style={styles.addOptionText}>+ Add Option</Text>
+              <Pressable style={styles.addOptionBtn} onPress={handleAddOption}>
+                <Text style={styles.addOptionText}>+ Add Option</Text>
+              </Pressable>
+            </>
+          )}
+
+          {/* Toggle */}
+          <Pressable
+            style={styles.toggleRow}
+            onPress={() => setAllowRevote(!allowRevote)}
+          >
+            <Text style={styles.label}>Allow revote</Text>
+            <Text style={styles.toggleValue}>{allowRevote ? "YES" : "NO"}</Text>
           </Pressable>
-        </>
-      )}
 
-      {/* Toggle */}
-      <Pressable
-        style={styles.toggleRow}
-        onPress={() => setAllowRevote(!allowRevote)}
-      >
-        <Text style={styles.label}>Allow revote</Text>
-        <Text style={styles.toggleValue}>{allowRevote ? "YES" : "NO"}</Text>
-      </Pressable>
+          {/* Expiry */}
+          <Pressable
+            style={styles.toggleRow}
+            onPress={() => setShowPicker(true)}
+          >
+            <Text style={styles.label}>Expiry date</Text>
+            <Text style={styles.toggleValue}>
+              {expiresAt ? expiresAt.toDateString() : "Not set"}
+            </Text>
+          </Pressable>
 
-      {/* Date Picker */}
-      <Pressable style={styles.toggleRow} onPress={() => setShowPicker(true)}>
-        <Text style={styles.label}>Expiry date</Text>
-        <Text style={styles.toggleValue}>
-          {expiresAt ? expiresAt.toDateString() : "Not set"}
-        </Text>
-      </Pressable>
+          {showPicker && (
+            <DateTimePicker
+              value={expiresAt ?? new Date()}
+              onChange={(e, date) => {
+                setShowPicker(false);
+                if (date) setExpiresAt(date);
+              }}
+            />
+          )}
 
-      {showPicker && (
-        <DateTimePicker
-          value={expiresAt ?? new Date()}
-          onChange={(e, date) => {
-            setShowPicker(false);
-            if (date) setExpiresAt(date);
-          }}
-        />
-      )}
+          {/* Submit */}
+          <Pressable
+            style={[styles.submitBtn, submitting && { opacity: 0.6 }]}
+            disabled={submitting}
+            onPress={handleSubmit}
+          >
+            <Text style={styles.submitBtnText}>
+              {submitting ? "Processing..." : "Create Poll"}
+            </Text>
+          </Pressable>
 
-      {/* Submit */}
-      <Pressable
-        style={[styles.submitBtn, submitting && { opacity: 0.6 }]}
-        disabled={submitting}
-        onPress={handleSubmit}
-      >
-        <Text style={styles.submitBtnText}>
-          {submitting ? "Processing..." : "Create Poll"}
-        </Text>
-      </Pressable>
-
-      <View style={{ height: 40 }}></View>
-    </ScrollView>
+          <View style={{ height: 40 }} />
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
+/* ---------- styles ---------- */
 const styles = StyleSheet.create({
-  container: {
+  safe: { flex: 1, backgroundColor: Colors.background },
+
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingBottom: 8,
+  },
+  backBtn: {
+    padding: 6,
+  },
+  headerTitle: {
     flex: 1,
-    backgroundColor: Colors.background,
+    textAlign: "center",
+    fontSize: 18,
+    fontWeight: "700",
+    color: Colors.textPrimary,
+  },
+
+  container: {
     padding: 16,
   },
-  heading: { fontSize: 22, fontWeight: "700", color: Colors.textPrimary },
   label: {
     marginTop: 16,
     fontSize: 14,
@@ -532,48 +876,67 @@ const styles = StyleSheet.create({
   textInput: {
     backgroundColor: Colors.surface,
     borderRadius: 10,
-    padding: 10,
-    marginTop: 4,
+    padding: 12,
+    marginTop: 6,
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  row: { flexDirection: "row", marginTop: 8 },
+  row: {
+    flexDirection: "row",
+    marginTop: 8,
+    flexWrap: "wrap",
+  },
   typeButton: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: Colors.border,
     marginRight: 8,
+    marginBottom: 8,
   },
   typeButtonActive: {
     backgroundColor: Colors.primary,
     borderColor: Colors.primary,
   },
-  typeButtonText: { color: Colors.textPrimary, fontSize: 13 },
-  optionRow: { flexDirection: "row", marginTop: 8 },
+  typeButtonText: {
+    fontSize: 13,
+    color: Colors.textPrimary,
+  },
   optionInput: {
-    flex: 1,
-    padding: 10,
+    marginTop: 8,
+    padding: 12,
     backgroundColor: Colors.surface,
     borderColor: Colors.border,
     borderWidth: 1,
     borderRadius: 10,
   },
-  addOptionBtn: { marginTop: 10 },
-  addOptionText: { color: Colors.primary, fontWeight: "700" },
+  addOptionBtn: {
+    marginTop: 10,
+  },
+  addOptionText: {
+    color: Colors.primary,
+    fontWeight: "700",
+  },
   toggleRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: 20,
   },
-  toggleValue: { color: Colors.primary, fontWeight: "700" },
+  toggleValue: {
+    color: Colors.primary,
+    fontWeight: "700",
+  },
   submitBtn: {
-    marginTop: 24,
+    marginTop: 28,
     backgroundColor: Colors.primary,
     paddingVertical: 14,
     alignItems: "center",
-    borderRadius: 12,
+    borderRadius: 14,
   },
-  submitBtnText: { color: Colors.textInverse, fontWeight: "700", fontSize: 15 },
+  submitBtnText: {
+    color: Colors.textInverse,
+    fontWeight: "700",
+    fontSize: 15,
+  },
 });

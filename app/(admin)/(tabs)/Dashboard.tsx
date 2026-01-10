@@ -1184,8 +1184,8 @@ export default function AdminDashboard() {
         <View style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
           {[
             ["Add Monitor", "/(admin)/(tabs)/ManageMonitors"],
-            ["Add News", "/(admin)/(tabs)/AddNews"],
-            ["Add Event", "/(admin)/(tabs)/AddEvent"],
+            ["Add News", "/(admin)/news/AddNews"],
+            ["Add Event", "/(shared)/events/components/AddEvent"],
             ["Add Video", "/(shared)/video/AddVideo"],
             ["Create Poll", "/(shared)/polls/CreatePoll"],
             ["Surveys", "/(admin)/(tabs)/AdminSurveyManager"],

@@ -16,7 +16,7 @@ import {
   View,
 } from "react-native";
 
-import { getNews, updateNews } from "@/app/(monitor)/(tabs)/api/news";
+import { getNews, updateNews } from "@/app/services/news";
 
 export default function AdminEditNews() {
   const router = useRouter();

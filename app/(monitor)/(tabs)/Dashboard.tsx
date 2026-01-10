@@ -26,11 +26,11 @@ import { PollDoc, pollService } from "@/app/services/pollService";
 import { postsService } from "@/app/services/postsService";
 import { videoService } from "@/app/services/videoService";
 
-import { listenToEvents } from "./api/events";
-import { listenToNews } from "./api/news";
+import { listenToEvents } from "../../services/events";
+import { listenToNews } from "../../services/news";
 
-import AttentionCards from "./components/AttentionCards";
-import SummaryCards from "./components/SummaryCards";
+import AttentionCards from "../components/AttentionCards";
+import SummaryCards from "../components/SummaryCards";
 
 const IMAGE_SIZE = 56;
 
@@ -312,7 +312,7 @@ export default function Dashboard() {
           <FabItem
             icon="calendar-outline"
             label="Add Event"
-            onPress={() => router.push("/(monitor)/(tabs)/AddEvent")}
+            onPress={() => router.push("/(shared)/events/components/AddEvent")}
           />
           <FabItem
             icon="newspaper-outline"

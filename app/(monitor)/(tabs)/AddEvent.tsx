@@ -20,7 +20,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { createEvent, getEvent, updateEvent } from "./api/events";
+import { createEvent, getEvent, updateEvent } from "../../services/events";
 
 export default function AddEvent() {
   const router = useRouter();

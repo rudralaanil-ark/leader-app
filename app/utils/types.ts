@@ -69,6 +69,8 @@ export interface PostMedia {
   publicId: string;
   order: number;
   type: "image" | "video";
+  thumbnailType?: "frame" | "custom";
+  frameTime?: number | null;
   s3Key?: string;
   thumbnailUrl?: string | null;
 }
