@@ -26,7 +26,7 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const BACKEND_URL = "https://leader-app-backend-production.up.railway.app"; // change this to your backend IP
+const BACKEND_URL = "https://lader-app-backend-production.up.railway.app"; // change this to your backend IP
 
 export default function EditMonitorsScreen() {
   const [monitors, setMonitors] = useState<any[]>([]);
